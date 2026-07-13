@@ -1,0 +1,66 @@
+# business-profile.yaml — Brewline 黄金样例(全部为合成数据,非运行时信任源)
+# 规则(与模板一致):
+#   1. 本文件只登记「键名与用途」,严禁写入任何密钥值、真实 token、内部域名端口。
+#   2. 私有值放 business-agent/local/ 与 .env(二者已在 .gitignore 中)。
+#   3. 升级 kit 时本文件永不被覆盖(preserveOnUpgrade)。
+company:
+  name: "Brewline"
+  industry: "精品咖啡豆 B2B 供应,自采生豆、自建烘焙,按订阅计划给咖啡馆供豆"
+  core_objects: "咖啡馆门店(客户)/ 生豆供应商(庄园与贸易商)/ 订单 / 发票 / 账期 / 订阅计划 / 烘焙批次 / 配送"
+systems:
+  - name: "Brewline ERP"
+    purpose: "客户门店主档、订单、发票、账期、订阅计划;回款流水由 PayFlow webhook 镜像入库"
+    access: "read-write"
+    api_docs: "内部 API 手册(存放于仓库外)"
+    auth_env: "BACKEND_API_KEY"   # 主机名键名 BACKEND_URL
+  - name: "Roastery OS"
+    purpose: "烘焙排产:烘焙批次、杯测分、豆仓库存、在途生豆"
+    access: "read"
+    api_docs: "供应商提供的 OpenAPI 文档(仓库外)"
+    auth_env: "ROASTERY_API_KEY"  # 主机名键名 ROASTERY_API_URL
+  - name: "PayFlow(支付服务商)"
+    purpose: "门店回款收单;以 webhook 推送回款事件到 ERP(HMAC 验签)"
+    access: "read"
+    api_docs: "服务商公开文档"
+    auth_env: "PAYFLOW_WEBHOOK_SECRET"
+channels:
+  - name: "运营 IM 群机器人"
+    type: "im"
+    has_webhook: true
+    auth_env: "OPS_WEBHOOK_URL"
+  - name: "事务邮件"
+    type: "email"
+    has_webhook: false
+    auth_env: "MAIL_API_KEY"
+  - name: "客户门户(门店自助网页)"
+    type: "web"
+    has_webhook: false
+    auth_env: "无"
+llm:
+  provider: "anthropic"
+  default_model_env: "LLM_MODEL"
+  complex_model_env: "LLM_COMPLEX_MODEL"
+  api_key_env: "LLM_API_KEY"
+budget:
+  monthly_usd: 200
+  per_session_usd: 0.5
+  alert_ratio: 0.7
+stakeholders:
+  - role: "财务负责人"
+    cares_about: "回款周期、对账准确性、坏账风险"
+    decision_power: "账务口径、贷记单审批"
+  - role: "运营负责人"
+    cares_about: "客服工单量、订阅续订率、周报"
+    decision_power: "运营流程与推送渠道"
+  - role: "采购经理"
+    cares_about: "生豆交期、豆仓库存、供应商表现"
+    decision_power: "采购与补货"
+  - role: "销售总监"
+    cares_about: "门店增长、流失预警、客户争议"
+    decision_power: "客户策略"
+  - role: "技术负责人"
+    cares_about: "系统稳定性、接口改造量、数据安全"
+    decision_power: "技术方案与凭证签发"
+  - role: "总经理"
+    cares_about: "投入产出、预算、风险"
+    decision_power: "预算与波次立项"

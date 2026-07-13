@@ -1,0 +1,10 @@
+# business-agent 工具 adapter 描述:Claude Code
+# init-workspace.cjs 读取本文件决定命令入口的生成路径与格式。
+tool: claude
+display_name: "Claude Code"
+status: generated
+output_dir: ".claude/commands"
+file_pattern: "{id}.md"
+frontmatter: true
+discovery: "斜杠命令(slash commands),由 .claude/commands/ 目录自动发现"
+notes: "命令文件带 front-matter(description / argument-hint);正文为薄入口,按序读取 core 契约。"

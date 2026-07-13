@@ -1,0 +1,178 @@
+# tool contracts for billing-assistant (input of /scaffold-gateway)
+# Brewline 黄金样例(合成数据,非运行时信任源)。
+# 规则:主机名与认证只登记环境变量键名;所有 write: true 必须 confirm: human。
+agent: billing-assistant
+backend:
+  base_url_env: BACKEND_URL          # Brewline ERP 主机名来自环境变量,不写真实域名
+  auth_env: BACKEND_API_KEY          # 网关专用最小权限 token,只登记键名
+tools:
+  # ---------- 只读工具(第 1 波注册) ----------
+  - name: get_unpaid_invoices
+    description: "查询未回款发票,可按门店过滤、可只看逾期。默认 summary(条数、金额合计、账龄分布、Top 5 逾期门店);要逐张清单传 mode=raw(上限 50 行)。与 get_invoice_detail 的区别:本工具是清单与聚合,单张发票的行项细节用 get_invoice_detail。"
+    method: GET
+    path: /api/v1/invoices/unpaid
+    params:
+      - name: store_id
+        type: string
+        required: false
+        desc: "门店编号,如 ST-0042;缺省时返回全部门店"
+      - name: overdue_only
+        type: boolean
+        required: false
+        desc: "true 时只返回已过账期到期日的发票"
+      - name: min_amount
+        type: number
+        required: false
+        desc: "只返回金额(元)不低于该值的发票"
+    scope_binding:
+      tenant_id: injected            # 网关强制注入,模型传入被覆盖
+    mode: summary|raw
+    write: false
+
+  - name: get_invoice_detail
+    description: "按发票编号查询单张发票明细:行项(豆种、烘焙批次号、数量、单价)、账期档、到期日、状态、已核销回款。默认 summary(关键字段);要完整行项传 mode=raw(上限 30 行)。"
+    method: GET
+    path: /api/v1/invoices/detail
+    params:
+      - name: invoice_id
+        type: string
+        required: true
+        desc: "发票编号,如 INV-2026-0587"
+    scope_binding:
+      tenant_id: injected
+    mode: summary|raw
+    write: false
+
+  - name: get_order_summary
+    description: "按门店与日期区间查询订单汇总(单数、豆量 kg、金额、履约状态分布)。默认 summary;要逐单明细传 mode=raw(上限 50 行)。用于回答『某店某段时间订了多少』和发票-订单核对。"
+    method: GET
+    path: /api/v1/orders/summary
+    params:
+      - name: store_id
+        type: string
+        required: false
+        desc: "门店编号;缺省时返回全部门店的聚合"
+      - name: date_from
+        type: string
+        required: true
+        desc: "起始日期 YYYY-MM-DD"
+      - name: date_to
+        type: string
+        required: true
+        desc: "结束日期 YYYY-MM-DD"
+    scope_binding:
+      tenant_id: injected
+    mode: summary|raw
+    write: false
+
+  - name: get_customer_billing_profile
+    description: "查询门店账务画像:账期档(NET 15/NET 30)、订阅计划档位(basic/plus/pro)、信用状态、历史逾期次数。单店单值查询,mode 固定 summary。用于账期与订阅计费口径答疑。"
+    method: GET
+    path: /api/v1/stores/billing-profile
+    params:
+      - name: store_id
+        type: string
+        required: true
+        desc: "门店编号"
+    scope_binding:
+      tenant_id: injected
+    mode: summary
+    write: false
+
+  - name: get_payment_records
+    description: "查询回款流水(PayFlow 镜像,字段:payment_id/invoice_id/store_id/amount/paid_at/method)。默认 summary(笔数、金额合计、未匹配发票的流水数);要逐笔明细传 mode=raw(上限 50 行)。用于三方核对与『钱到了没』类问题。"
+    method: GET
+    path: /api/v1/payments
+    params:
+      - name: store_id
+        type: string
+        required: false
+        desc: "门店编号;缺省时返回全部门店"
+      - name: invoice_id
+        type: string
+        required: false
+        desc: "按发票编号过滤其核销流水"
+      - name: date_from
+        type: string
+        required: true
+        desc: "起始日期 YYYY-MM-DD"
+      - name: date_to
+        type: string
+        required: true
+        desc: "结束日期 YYYY-MM-DD"
+    scope_binding:
+      tenant_id: injected
+    mode: summary|raw
+    write: false
+
+  - name: run_reconciliation_diagnosis
+    description: "对指定期间跑对账分层诊断:第 1 层完整性(订单-发票-回款该有的单据齐不齐)、第 2 层规则一致性(金额/状态/核销是否互洽)、第 3 层人工干预清单(疑似脏数据)。返回各层差异计数与逐条差异摘要(含 hint:每条差异附建议动作)。只读,不修改任何数据。"
+    script: src/toolpacks/billing-assistant/reconciliation.js
+    params:
+      - name: period_start
+        type: string
+        required: true
+        desc: "对账期间起始日期 YYYY-MM-DD"
+      - name: period_end
+        type: string
+        required: true
+        desc: "对账期间结束日期 YYYY-MM-DD"
+      - name: store_id
+        type: string
+        required: false
+        desc: "门店编号;缺省时全量诊断"
+    scope_binding:
+      tenant_id: injected
+    mode: summary
+    write: false
+
+  # ---------- 写工具(契约先行;第 3 波才在 registry 注册,见蓝图 §1/§3) ----------
+  - name: create_credit_note
+    description: "为指定发票创建贷记单(写操作,需人工确认)。金额不得超过发票余额,原因将展示在确认摘要中。返回贷记单编号。"
+    method: POST
+    path: /api/v1/credit-notes
+    params:
+      - name: invoice_id
+        type: string
+        required: true
+        desc: "发票编号"
+      - name: amount
+        type: number
+        required: true
+        desc: "贷记金额(元),不得超过发票余额"
+      - name: reason
+        type: string
+        required: true
+        desc: "开具原因(如批次杯测分未达标),将出现在确认摘要中"
+    scope_binding:
+      tenant_id: injected
+    mode: summary
+    write: true
+    confirm: human
+    effect: "在 Brewline ERP 账务模块创建一张贷记单并关联到该发票"
+
+  - name: send_payment_reminder
+    description: "向门店账务联系人发送催款提醒(写操作,需人工确认)。发送前返回将要发送的完整文案供确认。"
+    method: POST
+    path: /api/v1/notifications/payment-reminder
+    params:
+      - name: invoice_id
+        type: string
+        required: true
+        desc: "逾期发票编号"
+      - name: tone
+        type: string
+        required: false
+        enum: [gentle, firm]
+        desc: "措辞档位:gentle=首次提醒,firm=多次逾期;缺省 gentle"
+      - name: channel
+        type: string
+        required: false
+        enum: [email, im]
+        desc: "发送渠道;缺省 email"
+    scope_binding:
+      tenant_id: injected
+    mode: summary
+    write: true
+    confirm: human
+    effect: "通过 ERP 通知模块向该门店账务联系人发出一条催款提醒"

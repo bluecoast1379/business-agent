@@ -1,0 +1,10 @@
+# business-agent 工具 adapter 描述:Cursor
+# init-workspace.cjs 读取本文件决定命令入口的生成路径与格式。
+tool: cursor
+display_name: "Cursor"
+status: generated
+output_dir: ".cursor/commands"
+file_pattern: "{id}.md"
+frontmatter: false
+discovery: "命令面板 / 斜杠命令,由 .cursor/commands/ 目录自动发现"
+notes: "纯 Markdown 薄入口,无 front-matter;正文按序读取 core 契约。"

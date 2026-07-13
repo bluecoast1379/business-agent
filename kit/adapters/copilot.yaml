@@ -1,0 +1,10 @@
+# business-agent 工具 adapter 描述:GitHub Copilot
+# init-workspace.cjs 读取本文件决定命令入口的生成路径与格式。
+tool: copilot
+display_name: "GitHub Copilot"
+status: generated
+output_dir: ".github/prompts"
+file_pattern: "{id}.prompt.md"
+frontmatter: false
+discovery: "prompt files(*.prompt.md),由 .github/prompts/ 目录发现"
+notes: "纯 Markdown 薄入口;正文按序读取 core 契约。"

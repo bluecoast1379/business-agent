@@ -1,0 +1,122 @@
+# business-agent command manifest (source of truth for all tool adapters)
+# Format contract (parsed by bin/check-command-manifest.cjs, a hand-written mini-YAML reader):
+#   - two-space indented mappings
+#   - "- " item lists
+#   - single-line scalars only (quoted or bare); empty list is written as []
+#   - no anchors, no multi-line scalars, no flow collections
+schema_version: "1.0"
+command_count: 10
+commands:
+  - id: "agent-status"
+    title: "规划状态总览"
+    summary: "读取 agents/ 与 agent-gateway/ 的产物存在性,汇报每个 agent 所处阶段、缺失产物与下一步命令。"
+    entry: "core/commands/agent-status.md"
+    order: 0
+    outputs: []
+    requires: []
+    implementation_gate: false
+    argument_hint: "[agent-slug(可选,不填则汇总全部)]"
+  - id: "discover-business"
+    title: "业务资产盘点"
+    summary: "访谈式盘点现有系统、数据资产、人工流程痛点、通知渠道与干系人角色,形成业务资产清单。"
+    entry: "core/commands/discover-business.md"
+    order: 1
+    outputs:
+      - "agents/_portfolio/00-discovery.md"
+    requires:
+      - "business-agent/business-profile.yaml"
+    implementation_gate: false
+    argument_hint: "[业务域或产品线名称(可选)]"
+  - id: "map-opportunities"
+    title: "Agent 机会矩阵"
+    summary: "按「产品线 × 七类干系人视角」构建 agent 机会矩阵,逐线评估数据就绪度、痛点强度与改造量。"
+    entry: "core/commands/map-opportunities.md"
+    order: 2
+    outputs:
+      - "agents/_portfolio/01-opportunity-matrix.md"
+    requires:
+      - "agents/_portfolio/00-discovery.md"
+    implementation_gate: false
+    argument_hint: "[产品线名称(可选,聚焦单条产品线)]"
+  - id: "plan-roadmap"
+    title: "分波路线图与预算"
+    summary: "把机会矩阵排成 3~4 个实施波次,只读能力先行、写操作后置,每波附量化验收指标与成本估算方法。"
+    entry: "core/commands/plan-roadmap.md"
+    order: 3
+    outputs:
+      - "agents/_portfolio/02-roadmap.md"
+    requires:
+      - "agents/_portfolio/01-opportunity-matrix.md"
+    implementation_gate: false
+    argument_hint: "[波次数(可选,默认 3)]"
+  - id: "design-agent"
+    title: "单个 Agent 蓝图"
+    summary: "为单个 agent 产出八要素蓝图:定位、系统提示词草案、工具清单、知识文件、渠道、护栏、模型分档与未决问题。"
+    entry: "core/commands/design-agent.md"
+    order: 4
+    outputs:
+      - "agents/<slug>/00-blueprint.md"
+    requires:
+      - "agents/_portfolio/02-roadmap.md"
+    implementation_gate: false
+    argument_hint: "<agent-slug>"
+  - id: "define-tools"
+    title: "工具契约目录"
+    summary: "把后端 API 编译成工具契约 YAML:参数校验、scope 绑定、summary/raw 双形态与写操作人工确认。"
+    entry: "core/commands/define-tools.md"
+    order: 5
+    outputs:
+      - "agents/<slug>/01-tool-contracts.yaml"
+    requires:
+      - "agents/<slug>/00-blueprint.md"
+    implementation_gate: false
+    argument_hint: "<agent-slug>"
+  - id: "scaffold-gateway"
+    title: "实例化网关代码"
+    summary: "通过实现闸门检查后,把 business-agent/scaffold/ 实例化为 agent-gateway/ 并按蓝图与工具契约定制,跑通冒烟测试。"
+    entry: "core/commands/scaffold-gateway.md"
+    order: 6
+    outputs:
+      - "agent-gateway/"
+    requires:
+      - "agents/<slug>/00-blueprint.md"
+      - "agents/<slug>/01-tool-contracts.yaml"
+    implementation_gate: true
+    argument_hint: "<agent-slug> [目标目录(可选,默认 ./agent-gateway)]"
+  - id: "harden-agent"
+    title: "安全加固审查"
+    summary: "对照网关十大事故清单与数据隔离三层逐项审查,补渗透用例,产出带证据的安全审查表。"
+    entry: "core/commands/harden-agent.md"
+    order: 7
+    outputs:
+      - "agents/<slug>/02-safety-review.md"
+    requires:
+      - "agents/<slug>/00-blueprint.md"
+      - "agents/<slug>/01-tool-contracts.yaml"
+      - "agent-gateway/"
+    implementation_gate: false
+    argument_hint: "<agent-slug>"
+  - id: "eval-agent"
+    title: "评测与验收"
+    summary: "构建每能力不少于 5 条样例的评测集(含边界与拒答),定验收指标与灰度方案,验证 agent 达到上线标准。"
+    entry: "core/commands/eval-agent.md"
+    order: 8
+    outputs:
+      - "agents/<slug>/03-eval-plan.md"
+    requires:
+      - "agents/<slug>/00-blueprint.md"
+      - "agents/<slug>/02-safety-review.md"
+    implementation_gate: false
+    argument_hint: "<agent-slug>"
+  - id: "operate-agent"
+    title: "运营与巡检"
+    summary: "制定巡检任务表、成本监控与运营 SOP(误报处理、术语表维护、模型价格季度复核),让 agent 进入可持续运营。"
+    entry: "core/commands/operate-agent.md"
+    order: 9
+    outputs:
+      - "agents/<slug>/04-ops-runbook.md"
+    requires:
+      - "agents/<slug>/03-eval-plan.md"
+      - "agent-gateway/"
+    implementation_gate: false
+    argument_hint: "<agent-slug>"

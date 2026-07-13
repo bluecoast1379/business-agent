@@ -1,0 +1,16 @@
+{
+  "name": "agent-gateway-scaffold",
+  "version": "0.1.0",
+  "description": "Zero-dependency business agent gateway scaffold (Node 18+, ESM). Demo domain: Brewline, a fictional specialty coffee bean B2B supplier.",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "chat": "node bin/chat-repl.js",
+    "smoke": "node smoke.js"
+  }
+}

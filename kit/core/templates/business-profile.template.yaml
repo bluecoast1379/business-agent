@@ -1,0 +1,35 @@
+# business-profile.yaml — 公司业务画像(所有命令的公共输入)
+# 规则:
+#   1. 本文件只登记「键名与用途」,严禁写入任何密钥值、真实 token、内部域名端口。
+#   2. 私有值放 business-agent/local/ 与 .env(二者已在 .gitignore 中)。
+#   3. 升级 kit 时本文件永不被覆盖(preserveOnUpgrade);新版模板会写成 business-profile.yaml.business-agent-new 供对照。
+company:
+  name: "<TODO: 公司或品牌名>"
+  industry: "<TODO: 行业与商业模式一句话,如: 精品咖啡豆 B2B 供应,给咖啡馆供豆>"
+  core_objects: "<TODO: 核心业务对象,如: 客户门店/供应商/订单/账单/发票/配送>"
+systems:
+  # 每个现有系统一条;认证只写环境变量键名
+  - name: "<TODO: 系统名,如: 订单服务>"
+    purpose: "<TODO: 用途>"
+    access: "<TODO: read | read-write>"
+    api_docs: "<TODO: 文档位置或『无』>"
+    auth_env: "<TODO: 认证环境变量键名,如: ORDER_API_KEY>"
+channels:
+  # 可用的交互 / 通知渠道
+  - name: "<TODO: 渠道名,如: IM 群机器人 / 邮件 / 网页>"
+    type: "<TODO: im | email | sms | web>"
+    has_webhook: "<TODO: true | false>"
+    auth_env: "<TODO: 键名或『无』>"
+llm:
+  provider: "<TODO: anthropic | mock(先跑通再换真实 provider)>"
+  default_model_env: "LLM_MODEL"
+  complex_model_env: "LLM_COMPLEX_MODEL"
+  api_key_env: "LLM_API_KEY"
+budget:
+  monthly_usd: "<TODO: 月度总预算数字,如: 200>"
+  per_session_usd: "<TODO: 单次会话上限,如: 0.5>"
+  alert_ratio: "<TODO: 预警线比例,如: 0.7>"
+stakeholders:
+  - role: "<TODO: 角色,如: 运营负责人>"
+    cares_about: "<TODO: 关注什么>"
+    decision_power: "<TODO: 决策范围>"

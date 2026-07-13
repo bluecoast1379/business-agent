@@ -1,0 +1,10 @@
+# business-agent 工具 adapter 描述:Codex CLI
+# init-workspace.cjs 读取本文件决定命令入口的生成路径与格式。
+tool: codex
+display_name: "Codex CLI"
+status: via-AGENTS.md
+output_dir: ""
+file_pattern: ""
+frontmatter: false
+discovery: "根 AGENTS.md(codex 原生读取),不生成项目级 prompts 文件"
+notes: "命令总览与执行约定全部在 AGENTS.md 的 business-agent 栅栏块内;用户直接说「执行 /<id>」即可。"

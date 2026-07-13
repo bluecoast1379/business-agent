@@ -1,0 +1,54 @@
+{
+  "name": "business-agent",
+  "version": "0.1.0",
+  "description": "把「业务 AI agent 从规划到上线」编译成可执行工作流 + 可运行网关骨架的开源套件",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bluecoast1379/business-agent.git"
+  },
+  "homepage": "https://github.com/bluecoast1379/business-agent#readme",
+  "bugs": {
+    "url": "https://github.com/bluecoast1379/business-agent/issues"
+  },
+  "keywords": [
+    "ai-agent",
+    "agent-workflow",
+    "llm",
+    "business-agent",
+    "agent-gateway",
+    "scaffold"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "business-agent-init": "bin/init-workspace.cjs"
+  },
+  "files": [
+    "bin",
+    "kit",
+    "scaffold",
+    "examples",
+    "docs",
+    "test",
+    "install.sh",
+    "INIT.md",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md"
+  ],
+  "scripts": {
+    "check:syntax": "node bin/check-syntax.cjs",
+    "check:sanitized": "node bin/check-sanitized.cjs",
+    "check:manifest": "node bin/check-command-manifest.cjs",
+    "check:scaffold": "node bin/check-scaffold.cjs",
+    "test:smoke": "node test/smoke.test.cjs",
+    "test:manifest": "node test/manifest.test.cjs",
+    "check": "node bin/run-checks.cjs"
+  }
+}

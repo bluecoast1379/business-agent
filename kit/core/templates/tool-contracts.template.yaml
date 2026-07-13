@@ -1,0 +1,41 @@
+# tool contracts for <TODO: slug> (input of /scaffold-gateway)
+# 规则: read 优先; 所有 write: true 必须 confirm: human; 认证与主机名只引用环境变量键名。
+agent: "<TODO: slug>"
+backend:
+  base_url_env: "<TODO: 如 BACKEND_URL>"
+  auth_env: "<TODO: 如 BACKEND_API_KEY>"
+tools:
+  # --- 只读工具示例(summary/raw 双形态) ---
+  - name: "<TODO: 如 get_order_summary>"
+    description: "<TODO: 面向 LLM: 何时用 / 返回什么 / 与相邻工具区别。如: 按客户与日期区间查询订单汇总(件数、金额、履约率),默认 summary;要逐单明细传 mode=raw(上限 50 行)>"
+    method: "<TODO: GET|POST>"
+    path: "<TODO: 如 /api/orders/summary(相对路径,主机来自 base_url_env)>"
+    params:
+      - name: "<TODO: 如 date_from>"
+        type: "<TODO: string|number|boolean>"
+        required: true
+        desc: "<TODO: 如 起始日期 YYYY-MM-DD>"
+      - name: "<TODO: 如 customer_id>"
+        type: "string"
+        required: false
+        desc: "<TODO: 缺省行为写清楚>"
+    scope_binding:
+      tenant_id: injected
+    mode: "summary|raw"
+    write: false
+  # --- 写工具示例(必须人工确认) ---
+  - name: "<TODO: 如 create_credit_note>"
+    description: "<TODO: 写操作,需人工确认;说明副作用与返回>"
+    method: "POST"
+    path: "<TODO>"
+    params:
+      - name: "<TODO>"
+        type: "<TODO>"
+        required: true
+        desc: "<TODO: 将出现在确认摘要中的关键参数要写明>"
+    scope_binding:
+      tenant_id: injected
+    mode: "summary"
+    write: true
+    confirm: human
+    effect: "<TODO: 一句话副作用,如: 在账务系统创建一张贷记单>"

@@ -1,0 +1,26 @@
+# private-denylist.example.txt — 私有 denylist 示例(占位词)
+#
+# 用法:
+#   node bin/check-sanitized.cjs --extra-banned /path/outside-repo/private-denylist.txt
+#
+# 规则:
+#   1. 一行一个词或正则(JavaScript 正则语法),`#` 开头为注释,空行忽略。
+#   2. 本文件只是格式示例,内容全部为占位词——请复制到【仓库之外】
+#      (如私有运维仓、本机受控目录)后替换为你团队真实的内部代号、
+#      域名、人名清单。
+#   3. denylist 本身就是一份敏感词汇总:提交进任何公开仓库等于自我泄漏,
+#      因此它必须放在仓库外,且不要出现在 CI 日志的明文输出里。
+#   4. 建议与发布前手续绑定:每次对外分发前跑一次带 --extra-banned 的
+#      check:sanitized,零命中才放行(见 SECURITY.md)。
+
+# --- 内部项目代号(占位) ---
+project-nebula-internal
+codename-falcon
+
+# --- 内部域名 / 主机名形态(占位,正则) ---
+[a-z0-9-]+\.corp-intranet\.example
+gateway-internal\.example\.com
+
+# --- 人名 / 工号形态(占位) ---
+employee-0000
+placeholder-staff-name
