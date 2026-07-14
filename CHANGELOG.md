@@ -4,7 +4,7 @@
 
 > 说明:版本条目描述**仓库内容**;某版本是否已发布到 npm registry 以 registry 实际状态为准,本文件不做保证。对外分发前请按 [docs/install.md](./docs/install.md) 的通道与验收清单执行。
 
-## [Unreleased]
+## [0.2.0] - 2026-07-14
 
 ### Changed
 

@@ -1,6 +1,6 @@
 # 安装方式:tarball / Git / registry
 
-Business Agent Kit 支持三种分发通道。当前版本 `0.1.0` 处于 Unreleased 状态——本文的命令**不假定任何远程 tag、GitHub Release 或 npm 包已存在**;registry 通道在包实际发布前只是形状说明。
+Business Agent Kit 支持三种分发通道。当前版本 `0.2.0`(远程存在对应 git tag `v0.2.0`);**npm 包尚未发布**,registry 通道在包实际发布前只是形状说明。
 
 通用前置:`node >= 22`(kit 与 scaffold 均零 npm 依赖,无需 `npm install`)。
 
@@ -10,19 +10,19 @@ Business Agent Kit 支持三种分发通道。当前版本 `0.1.0` 处于 Unrele
 
 ```bash
 npm pack
-# 生成 business-agent-0.1.0.tgz
+# 生成 business-agent-0.2.0.tgz
 ```
 
 接收方两种用法:
 
 ```bash
 # A. 全局安装,获得 business-agent-init 命令
-npm install -g ./business-agent-0.1.0.tgz
+npm install -g ./business-agent-0.2.0.tgz
 cd /path/to/your-workspace
 business-agent-init --target . --tools claude,cursor
 
 # B. 只解包,不安装
-tar -xzf business-agent-0.1.0.tgz     # 解出 package/ 目录
+tar -xzf business-agent-0.2.0.tgz     # 解出 package/ 目录
 cd /path/to/your-workspace
 node ../package/bin/init-workspace.cjs --target . --tools claude
 ```
@@ -41,7 +41,7 @@ node ../business-agent/bin/init-workspace.cjs --target . --tools claude,cursor,c
 
 ## 通道三:registry(包发布后)
 
-包发布到 npm registry 之后(0.1.0 当前**尚未发布**),形状为:
+包发布到 npm registry 之后(0.2.0 当前**尚未发布**),形状为:
 
 ```bash
 npm install -g business-agent

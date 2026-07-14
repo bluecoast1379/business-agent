@@ -146,4 +146,4 @@ npm run test:smoke        # init 进临时目录,断言生成物与升级保护
 
 「generated」表示初始化器生成入口并通过结构检查,不等于已在每个真实客户端版本完成人工认证;人工验收口径见 [docs/support-matrix.md](./docs/support-matrix.md)。
 
-维护约定:通用规则只改 `kit/core/`,adapter 保持薄入口;贡献三原则与 PR 检查清单见 [CONTRIBUTING.md](./CONTRIBUTING.md);漏洞私密报告与发布前脱敏义务见 [SECURITY.md](./SECURITY.md);行为规范见 [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)。当前版本 `0.1.0`(Unreleased):版本号只描述仓库内容,不代表任何远程 tag、Release 或 npm 包已存在,见 [CHANGELOG.md](./CHANGELOG.md)。License:Apache-2.0。
+维护约定:通用规则只改 `kit/core/`,adapter 保持薄入口;贡献三原则与 PR 检查清单见 [CONTRIBUTING.md](./CONTRIBUTING.md);漏洞私密报告与发布前脱敏义务见 [SECURITY.md](./SECURITY.md);行为规范见 [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)。当前版本 `0.2.0`(对应 git tag `v0.2.0`):版本号描述仓库内容;npm 包尚未发布,见 [CHANGELOG.md](./CHANGELOG.md)。License:Apache-2.0。
