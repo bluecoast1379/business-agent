@@ -20,7 +20,7 @@
     "scaffold"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "bin": {
     "business-agent-init": "bin/init-workspace.cjs"

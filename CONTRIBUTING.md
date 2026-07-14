@@ -26,7 +26,7 @@
 
 ## 开发约定
 
-- kit 的 `bin/`、`test/` 为纯 Node CommonJS(`.cjs`),scaffold 为纯 Node 18+ ESM(`.js`);两侧都**不引入任何 npm 依赖**。
+- kit 的 `bin/`、`test/` 为纯 Node CommonJS(`.cjs`),scaffold 为纯 Node 22+ ESM(`.js`);两侧都**不引入任何 npm 依赖**。
 - 文档以中文为主;命令 id、代码标识符、代码注释用英文。
 - 新增或修改命令必须同步三处:`kit/core/command-manifest.yaml` 登记、`kit/core/commands/<id>.md` 契约、对应模板;`npm run check:manifest` 会拦截孤儿文件与漏登记。
 - 影响产物结构时,同步更新 `examples/brewline/` 黄金样例与 `docs/methodology.md`。
@@ -36,7 +36,7 @@
 提交前逐项自查:
 
 - [ ] `npm run check` 全绿(syntax / sanitized / manifest / scaffold / smoke);
-- [ ] 无新增 npm 依赖;`engines.node >= 18` 下可运行;
+- [ ] 无新增 npm 依赖;`engines.node >= 22` 下可运行;
 - [ ] 新增 / 修改的命令已登记 manifest,entry 文档存在,模板同步;
 - [ ] 受影响的 `examples/brewline/` 与 docs 已同步;
 - [ ] 文档中文、标识符英文,示例全部 Brewline 合成语境;

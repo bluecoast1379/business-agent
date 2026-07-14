@@ -50,7 +50,7 @@ function toAnthropicTool(tool) {
 
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504, 529]);
 
-/** Real provider: Anthropic Messages API over global fetch (Node 18+).
+/** Real provider: Anthropic Messages API over global fetch (Node 22+).
  *  Bounded resilience: per-attempt timeout + up to `maxRetries` retries with
  *  exponential backoff (honoring retry-after when present) on 429/5xx/network
  *  errors. Non-retryable statuses (4xx auth/validation) fail immediately. */

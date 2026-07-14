@@ -2,7 +2,7 @@
 
 Business Agent Kit 支持三种分发通道。当前版本 `0.1.0` 处于 Unreleased 状态——本文的命令**不假定任何远程 tag、GitHub Release 或 npm 包已存在**;registry 通道在包实际发布前只是形状说明。
 
-通用前置:`node >= 18`(kit 与 scaffold 均零 npm 依赖,无需 `npm install`)。
+通用前置:`node >= 22`(kit 与 scaffold 均零 npm 依赖,无需 `npm install`)。
 
 ## 通道一:tarball(推荐用于离线 / 受控分发)
 

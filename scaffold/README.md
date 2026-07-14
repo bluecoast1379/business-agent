@@ -1,6 +1,6 @@
 # agent-gateway-scaffold
 
-零依赖的业务 AI Agent 网关骨架:纯 Node 18+ ESM,`node:http` 提供 HTTP/SSE 通道,全局 `fetch` 调用 Anthropic Messages API(含 tool use 循环),内置确定性 MockProvider 可完全离线跑通。示例业务域为虚构的精品咖啡豆 B2B 供应商 **Brewline**(客户=咖啡馆),替换 toolpack 即可接入你的真实业务。
+零依赖的业务 AI Agent 网关骨架:纯 Node 22+ ESM,`node:http` 提供 HTTP/SSE 通道,全局 `fetch` 调用 Anthropic Messages API(含 tool use 循环),内置确定性 MockProvider 可完全离线跑通。示例业务域为虚构的精品咖啡豆 B2B 供应商 **Brewline**(客户=咖啡馆),替换 toolpack 即可接入你的真实业务。
 
 ## 架构
 

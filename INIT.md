@@ -18,7 +18,7 @@
 node ../business-agent/bin/init-workspace.cjs --target . --tools claude,cursor,copilot
 ```
 
-Shell wrapper(会先校验 `node >= 18` 再转发同一入口):
+Shell wrapper(会先校验 `node >= 22` 再转发同一入口):
 
 ```bash
 ../business-agent/install.sh . --tools claude

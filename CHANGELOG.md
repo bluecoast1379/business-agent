@@ -4,6 +4,12 @@
 
 > 说明:版本条目描述**仓库内容**;某版本是否已发布到 npm registry 以 registry 实际状态为准,本文件不做保证。对外分发前请按 [docs/install.md](./docs/install.md) 的通道与验收清单执行。
 
+## [Unreleased]
+
+### Changed
+
+- **运行环境要求提升为 Node >= 22**(Node 18 与 20 已先后 EOL,不再作为支持线):`engines`、`install.sh` 版本闸、README/文档口径同步;CI 矩阵改为 ubuntu 22/24/26 + macos 24 + windows 24。
+
 ## [0.1.0] - 2026-07-13
 
 ### Added

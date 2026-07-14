@@ -1,6 +1,6 @@
 # Scaffold 指南:架构、模块职责与扩展
 
-`scaffold/` 是一个零依赖(Node 18+,ESM,`node:http` + 全局 `fetch`)的业务 agent 网关骨架。`/scaffold-gateway` 命令把它复制为目标工作区的 `agent-gateway/` 并按蓝图定制;你也可以直接在副本上手工开发。本文讲清楚它的结构、每个模块的职责边界,以及三类最常见的扩展:接真实后端、换 LLM provider、加渠道。
+`scaffold/` 是一个零依赖(Node 22+,ESM,`node:http` + 全局 `fetch`)的业务 agent 网关骨架。`/scaffold-gateway` 命令把它复制为目标工作区的 `agent-gateway/` 并按蓝图定制;你也可以直接在副本上手工开发。本文讲清楚它的结构、每个模块的职责边界,以及三类最常见的扩展:接真实后端、换 LLM provider、加渠道。
 
 ## 架构总览
 
