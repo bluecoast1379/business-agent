@@ -3,6 +3,12 @@ name: Release package
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to verify without publishing
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,21 +22,56 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Verify recovery tag matches package version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          expected_tag="v${package_version}"
+          if [[ "$RELEASE_TAG" != "$expected_tag" ]]; then
+            echo "Recovery tag ${RELEASE_TAG} must equal ${expected_tag}." >&2
+            exit 1
+          fi
+          tag_commit="$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")"
+          head_commit="$(git rev-parse HEAD)"
+          if [[ "$head_commit" != "$tag_commit" ]]; then
+            echo "Recovery checkout must exactly match ${RELEASE_TAG}." >&2
+            exit 1
+          fi
       - run: npm run release:verify
       - name: Check whether this exact version already exists
         id: registry
         shell: bash
         run: |
-          if npm view "${npm_package_name}@${npm_package_version}" version --json >/dev/null 2>&1; then
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          lookup_log="$(mktemp)"
+          trap 'rm -f "$lookup_log"' EXIT
+          if npm view "${package_name}@${package_version}" version --json >"$lookup_log" 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
-          else
+          elif grep -Eq 'E404|404 Not Found' "$lookup_log"; then
             echo "published=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "npm registry lookup failed; refusing to infer that the version is unpublished." >&2
+            exit 1
+          fi
+      - name: Confirm recovery target is already published
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          ALREADY_PUBLISHED: ${{ steps.registry.outputs.published }}
+        run: |
+          if [[ "$ALREADY_PUBLISHED" != "true" ]]; then
+            echo "Recovery mode verifies existing releases and will not publish a missing version." >&2
+            exit 1
           fi
       - name: Publish with npm trusted publishing
-        if: steps.registry.outputs.published != 'true'
+        if: github.event_name == 'release' && steps.registry.outputs.published != 'true'
         run: npm publish --access public

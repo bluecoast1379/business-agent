@@ -103,3 +103,21 @@ test('CI workflows reject movable third-party action tags', () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('release workflow reads package identity explicitly and keeps recovery verify-only', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '..', '.github', 'workflows', 'release.yml'),
+    'utf8',
+  );
+  assert.doesNotMatch(workflow, /\$\{npm_package_(?:name|version)\}/);
+  assert.match(workflow, /workflow_dispatch:\s+inputs:\s+tag:/);
+  assert.match(workflow, /ref: \$\{\{ github\.event_name == 'release' && github\.event\.release\.tag_name \|\| inputs\.tag \}\}/);
+  assert.match(workflow, /refs\/tags\/\$\{RELEASE_TAG\}\^\{commit\}/);
+  assert.match(workflow, /node -p "require\('\.\/package\.json'\)\.name"/);
+  assert.match(workflow, /node -p "require\('\.\/package\.json'\)\.version"/);
+  assert.match(workflow, /npm view "\$\{package_name\}@\$\{package_version\}"/);
+  assert.match(workflow, /grep -Eq 'E404\|404 Not Found'/);
+  assert.match(workflow, /refusing to infer that the version is unpublished/);
+  assert.match(workflow, /Recovery mode verifies existing releases and will not publish a missing version/);
+  assert.match(workflow, /if: github\.event_name == 'release' && steps\.registry\.outputs\.published != 'true'/);
+});
