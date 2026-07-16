@@ -405,7 +405,6 @@ export function createDurableScheduler({
     const timeoutController = new AbortController();
     const timeoutError = jobTimeoutError(definition.timeoutMs);
     const timeoutId = setTimeout(() => timeoutController.abort(timeoutError), definition.timeoutMs);
-    timeoutId.unref?.();
     const signal = AbortSignal.any([leaseSignal, timeoutController.signal]);
     let abortListener;
     const aborted = new Promise((_, reject) => {

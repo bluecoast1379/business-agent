@@ -31,6 +31,35 @@ function signalEndpoint(base, signal) {
   return url.toString();
 }
 
+function exportTimeout(timeoutMs) {
+  const controller = new AbortController();
+  const error = Object.assign(
+    new Error(`[telemetry] OTLP export timed out after ${timeoutMs}ms`),
+    { code: 'OTLP_TIMEOUT' },
+  );
+  const timer = setTimeout(() => controller.abort(error), timeoutMs);
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timer),
+  };
+}
+
+function awaitWithSignal(promise, signal) {
+  if (signal.aborted) return Promise.reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const cleanup = () => signal.removeEventListener('abort', abort);
+    const abort = () => {
+      cleanup();
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(
+      (value) => { cleanup(); resolve(value); },
+      (error) => { cleanup(); reject(error); },
+    );
+  });
+}
+
 function spanPayload(event) {
   return {
     resourceSpans: [{
@@ -84,16 +113,21 @@ export function createOtlpHttpJsonSink({ endpoint, fetchImpl = globalThis.fetch,
     async export(event) {
       if (event.kind === 'span' && event.phase !== 'end') return;
       if (event.kind !== 'span' && event.kind !== 'metric') return;
-      const response = await fetchImpl(event.kind === 'span' ? tracesUrl : metricsUrl, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(event.kind === 'span' ? spanPayload(event) : metricPayload(event)),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      if (!response.ok) {
-        const error = new Error(`[telemetry] OTLP HTTP ${response.status}`);
-        error.code = 'OTLP_HTTP_ERROR';
-        throw error;
+      const timeout = exportTimeout(timeoutMs);
+      try {
+        const response = await awaitWithSignal(fetchImpl(event.kind === 'span' ? tracesUrl : metricsUrl, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(event.kind === 'span' ? spanPayload(event) : metricPayload(event)),
+          signal: timeout.signal,
+        }), timeout.signal);
+        if (!response.ok) {
+          const error = new Error(`[telemetry] OTLP HTTP ${response.status}`);
+          error.code = 'OTLP_HTTP_ERROR';
+          throw error;
+        }
+      } finally {
+        timeout.clear();
       }
     },
     async flush() {},

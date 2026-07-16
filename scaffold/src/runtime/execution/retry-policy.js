@@ -15,7 +15,6 @@ export function abortableDelay(ms, signal) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
     const timer = setTimeout(done, ms);
-    timer.unref?.();
     function done() {
       signal?.removeEventListener('abort', abort);
       resolve();

@@ -14,6 +14,34 @@ function abortableDelay(ms, signal) {
   });
 }
 
+function referencedTimeoutSignal(timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(new DOMException('The operation timed out', 'TimeoutError')),
+    timeoutMs,
+  );
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timer),
+  };
+}
+
+function awaitWithSignal(promise, signal) {
+  if (signal.aborted) return Promise.reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const cleanup = () => signal.removeEventListener('abort', abort);
+    const abort = () => {
+      cleanup();
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(
+      (value) => { cleanup(); resolve(value); },
+      (error) => { cleanup(); reject(error); },
+    );
+  });
+}
+
 function retryDelay(response, attempt) {
   const raw = Number(response.headers?.get?.('retry-after'));
   return Number.isFinite(raw) && raw > 0 ? Math.min(raw * 1_000, 30_000) : Math.min(250 * 2 ** attempt, 5_000);
@@ -190,23 +218,26 @@ export function createOpenAICompatibleProvider({
       let responseSignal;
       let responseTimeout;
       for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-        const timeout = AbortSignal.timeout(timeoutMs);
-        const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+        const timeout = referencedTimeoutSignal(timeoutMs);
+        const combined = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal;
         try {
-          response = await fetchImpl(endpoint, {
+          response = await awaitWithSignal(fetchImpl(endpoint, {
             method: 'POST',
             headers: requestHeaders,
             body: JSON.stringify(body),
             signal: combined,
-          });
+          }), combined);
         } catch (error) {
-          throw unknownCostError(error, { signal, timeout });
+          const wrapped = unknownCostError(error, { signal, timeout: timeout.signal });
+          timeout.clear();
+          throw wrapped;
         }
         if (response.ok) {
           responseSignal = combined;
           responseTimeout = timeout;
           break;
         }
+        timeout.clear();
         if (SAFE_TO_RETRY.has(response.status) && attempt < maxRetries) {
           await response.body?.cancel?.().catch?.(() => {});
           await abortableDelay(retryDelay(response, attempt), signal);
@@ -228,7 +259,9 @@ export function createOpenAICompatibleProvider({
         if (!Array.isArray(payload?.choices) || !payload.choices[0]) throw malformed('response has no choices');
         return normalizeChoice(payload.choices[0], payload.usage, maxResponseBytes, maxTokens);
       } catch (error) {
-        throw unknownCostError(error, { signal, timeout: responseTimeout });
+        throw unknownCostError(error, { signal, timeout: responseTimeout?.signal });
+      } finally {
+        responseTimeout?.clear();
       }
     },
   };

@@ -295,7 +295,8 @@ async function withTimeout(operation, timeoutMs, signal) {
     { unknownOutcome: true },
   );
   const timer = setTimeout(() => controller.abort(timeoutError), timeoutMs);
-  timer.unref?.();
+  // This timer may be the only active handle while a node is pending. Keep it
+  // referenced so Node 22 cannot exit before the timeout enforces the boundary.
   const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
   const promise = Promise.resolve().then(() => operation(combined));
   try {
