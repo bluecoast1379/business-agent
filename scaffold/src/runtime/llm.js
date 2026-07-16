@@ -66,6 +66,34 @@ function abortableDelay(ms, signal) {
   });
 }
 
+function referencedTimeoutSignal(timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(new DOMException('The operation timed out', 'TimeoutError')),
+    timeoutMs,
+  );
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timer),
+  };
+}
+
+function awaitWithSignal(promise, signal) {
+  if (signal.aborted) return Promise.reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+  return new Promise((resolve, reject) => {
+    const cleanup = () => signal.removeEventListener('abort', abort);
+    const abort = () => {
+      cleanup();
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(
+      (value) => { cleanup(); resolve(value); },
+      (error) => { cleanup(); reject(error); },
+    );
+  });
+}
+
 function anthropicMalformed(message) {
   const error = new Error(`[llm] anthropic ${message}`);
   error.code = 'MALFORMED_RESPONSE';
@@ -157,18 +185,21 @@ export function createAnthropicProvider({
       let responseSignal;
       let responseTimeout;
       for (let attempt = 0; ; attempt += 1) {
-        const timeout = AbortSignal.timeout(timeoutMs);
-        const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+        const timeout = referencedTimeoutSignal(timeoutMs);
+        const combined = signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal;
         try {
-          res = await requestOnce(body, combined);
+          res = await awaitWithSignal(requestOnce(body, combined), combined);
         } catch (err) {
-          throw anthropicUnknownCostError(err, { signal, timeout });
+          const wrapped = anthropicUnknownCostError(err, { signal, timeout: timeout.signal });
+          timeout.clear();
+          throw wrapped;
         }
         if (res.ok) {
           responseSignal = combined;
           responseTimeout = timeout;
           break;
         }
+        timeout.clear();
         if (SAFE_TO_RETRY_STATUS.has(res.status) && attempt < maxRetries) {
           const retryAfterSec = Number(res.headers?.get?.('retry-after'));
           const delayMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0
@@ -192,7 +223,9 @@ export function createAnthropicProvider({
         try { data = JSON.parse(text); } catch { throw anthropicMalformed('returned malformed JSON'); }
         return normalizeAnthropicResponse(data, maxResponseBytes, maxTokens);
       } catch (error) {
-        throw anthropicUnknownCostError(error, { signal, timeout: responseTimeout });
+        throw anthropicUnknownCostError(error, { signal, timeout: responseTimeout?.signal });
+      } finally {
+        responseTimeout?.clear();
       }
     },
   };

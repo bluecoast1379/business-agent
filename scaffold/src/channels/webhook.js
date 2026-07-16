@@ -90,7 +90,6 @@ export function createWebhookReplayStore({
       inFlight.delete(key);
       settle({ status: 'unknown' });
     }, timeoutMs);
-    timer.unref?.();
     inFlight.set(key, { payloadHash, promise, settle, timer });
     return promise;
   }
