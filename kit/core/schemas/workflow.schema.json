@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://business-agent.local/schemas/workflow.schema.json",
+  "title": "Business Agent Workflow",
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "initial", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "initial": { "type": "string" },
+    "stateSchema": { "type": "object" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "enum": ["task", "branch", "interrupt", "handoff", "end"] },
+          "handler": { "type": "string" },
+          "next": { "type": "string" },
+          "branches": { "type": "object", "additionalProperties": { "type": "string" } },
+          "default": { "type": "string" },
+          "timeoutMs": { "type": "integer", "minimum": 1 },
+          "compensation": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "id": "finance-ops-toolpack",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "get_reconciliation_summary",
+      "description": "Read a tenant-bound fictional reconciliation batch summary.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "batchId": { "type": "string", "minLength": 1 }
+        },
+        "required": ["batchId"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator"],
+        "tenantScope": "customer",
+        "dataClass": "tenant-financial-summary",
+        "effect": "read",
+        "approval": "none",
+        "idempotency": "none",
+        "timeoutMs": 5000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "batchId": { "type": "string" },
+            "matchedCount": { "type": "integer" },
+            "exceptionCount": { "type": "integer" }
+          },
+          "required": ["batchId", "matchedCount", "exceptionCount"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "get_invoice_exception",
+      "description": "Read one tenant-bound fictional invoice exception without payment credentials.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "exceptionId": { "type": "string", "minLength": 1 }
+        },
+        "required": ["exceptionId"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator"],
+        "tenantScope": "customer",
+        "dataClass": "tenant-financial-exception",
+        "effect": "read",
+        "approval": "none",
+        "idempotency": "none",
+        "timeoutMs": 5000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "exceptionId": { "type": "string" },
+            "reasonCode": { "type": "string" },
+            "amountMinor": { "type": "integer" }
+          },
+          "required": ["exceptionId", "reasonCode", "amountMinor"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "create_adjustment_request",
+      "description": "Request a human-approved fictional accounting adjustment without posting a ledger entry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "exceptionId": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        },
+        "required": ["exceptionId", "reason"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator"],
+        "tenantScope": "customer",
+        "dataClass": "tenant-financial-adjustment",
+        "effect": "write",
+        "approval": "human",
+        "idempotency": "required",
+        "timeoutMs": 10000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "requestId": { "type": "string" },
+            "exceptionId": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending-approval"] }
+          },
+          "required": ["requestId", "exceptionId", "status"],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

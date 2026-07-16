@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://business-agent.local/schemas/adapter-conformance.schema.json",
+  "title": "Adapter Self-Reported Manual Check Record",
+  "description": "Repository-local observation only. It is not trusted certification evidence and cannot change the public certification status.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "tool", "status", "clientVersion", "os", "verifiedAt", "expiresAt", "checks"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "tool": { "type": "string" },
+    "status": { "const": "self-reported-manual-check" },
+    "clientVersion": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "os": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "verifiedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entryVisible", "thinEntryReadsCore", "artifactPathCorrect"],
+      "properties": {
+        "entryVisible": { "const": true },
+        "thinEntryReadsCore": { "const": true },
+        "artifactPathCorrect": { "const": true }
+      }
+    }
+  }
+}

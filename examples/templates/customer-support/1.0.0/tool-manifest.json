@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "id": "customer-support-toolpack",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "get_case_summary",
+      "description": "Read one tenant-bound fictional support case summary.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "caseId": { "type": "string", "minLength": 1 }
+        },
+        "required": ["caseId"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator", "customer"],
+        "tenantScope": "customer",
+        "dataClass": "customer-support-case",
+        "effect": "read",
+        "approval": "none",
+        "idempotency": "none",
+        "timeoutMs": 5000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "caseId": { "type": "string" },
+            "status": { "type": "string" },
+            "summary": { "type": "string" }
+          },
+          "required": ["caseId", "status", "summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "search_help_articles",
+      "description": "Search fictional approved help articles for a tenant-bound support question.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "minLength": 1 }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator", "customer"],
+        "tenantScope": "customer",
+        "dataClass": "approved-help-content",
+        "effect": "read",
+        "approval": "none",
+        "idempotency": "none",
+        "timeoutMs": 5000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "articleIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "answer": { "type": "string" }
+          },
+          "required": ["articleIds", "answer"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "escalate_support_case",
+      "description": "Request a human-owned escalation for one tenant-bound fictional support case.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "caseId": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        },
+        "required": ["caseId", "reason"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator", "customer"],
+        "tenantScope": "customer",
+        "dataClass": "customer-support-case",
+        "effect": "write",
+        "approval": "human",
+        "idempotency": "required",
+        "timeoutMs": 10000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "caseId": { "type": "string" },
+            "handoffId": { "type": "string" },
+            "status": { "type": "string", "enum": ["queued"] }
+          },
+          "required": ["caseId", "handoffId", "status"],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

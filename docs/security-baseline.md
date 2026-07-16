@@ -32,7 +32,7 @@
 
 - **症状**:网关地址一旦被扫到,任何人可白嫖模型调用,并透过工具触达内部数据;账单被刷爆。
 - **根因**:demo 阶段「先跑起来」,上线时忘了补鉴权。
-- **守卫**:除 `GET /health` 外所有端点强制 `Authorization: Bearer GATEWAY_AUTH_TOKEN`(缺 token 的启动直接 fail-fast);渗透用例必测无 token 401;预算上限兜底刷量。
+- **守卫**:除 `GET /health` 外先验证 Bearer principal,再按 route 校验 role + scope + tenant,并对 tenant/subject 执行 rate/concurrency quota;production 不接受只有 legacy `GATEWAY_AUTH_TOKEN` 而没有 `AUTH_PRINCIPALS_JSON` 的配置。渗透用例必须覆盖无 token 401、错 role/scope 403、跨租户拒绝与 quota 429;预算上限只是最后一道成本兜底。
 
 ### 6. 默认以最高权限角色调用后端
 
@@ -56,7 +56,7 @@
 
 - **症状**:模型误解语义或被提示注入,直接创建了贷项、发出了催款通知;事后只能人工回滚。
 - **根因**:写工具与读工具同权,一次 tool-call 就落库。
-- **守卫**:契约层所有 `write: true` 工具必须 `confirm: human`;运行时用 confirm-gate 包装——首调只登记待办并返回 confirmationId,**审批信号走模型触达不到的带外通道**(鉴权管理端点 `POST /confirmations/:id/approve` 或 REPL 人工命令),审批后凭 id 二调才真执行;未审批的二调一律拒绝。注意反例:把确认凭证带内返回给模型的「两段式」不是人工确认——模型可在同一循环里自我确认。渗透用例必测「注入诱导写操作」与「模型自我确认」都被拦截。
+- **守卫**:policy manifest 中所有 `effect: write` 工具必须同时为 `approval: human` 与 `idempotency: required`;运行时用 confirm-gate 包装——首调只登记待办并返回 confirmationId,**审批信号走模型触达不到的带外通道**。任何带参数写工具必须给出 allowlist/redacted review projection，并用 args/review digest 绑定；禁止仅显示 `Execute tool` 的盲审批。中心边界再次清除 credential shape，含凭证形态的 args 在落盘前拒绝。persistent ledger 必须有硬容量上限和全分页 retention，管理列表不返回原始 args，且不得为腾容量静默删除未过期审批、执行中或待对账状态。
 
 ### 10. 工具返回原始大 JSON 撑爆上下文
 
@@ -74,6 +74,42 @@
 
 配套渗透用例:越权租户、无 token 调用、提示注入样例。黄金样例见 `examples/brewline/agents/billing-assistant/02-safety-review.md`。
 
+## 生产 profile 的额外硬边界
+
+十大事故清单是最低门槛。production profile 还必须满足以下工程控制：
+
+### 身份与权限
+
+- `AUTH_PRINCIPALS_JSON` 为每个 token 绑定稳定 subject、tenant、role 与最小 scopes；`admin`/`*` 只用于受控应急身份；
+- HTTP route policy 与 tool policy 是两层独立授权，不能用 prompt 代替；tool manifest 缺 audience、tenantScope、dataClass、effect、approval、idempotency、timeout、audit 或 outputSchema 时 fail closed；
+- 写工具同时要求 human approval 与 idempotency，审批端点只对 operator/admin 开放，模型不能取得审批凭证或直接调用审批通道；
+- webhook 除 HMAC 与 replay window 外，还要绑定显式 integration identity/principal，不能把 body 内自报 tenant 当成信任身份。
+- webhook replay ledger 不持久化完整 reply/业务结果；`running` 过期与重启后无法回放的 `committed` 均 fail closed，只能由具有 `webhooks:reconcile` 的 operator 按已知 eventId 对账。管理面不提供 raw eventId 列表，ledger 必须有硬容量上限，满载时拒绝新事件。
+
+### 持久化与可靠执行
+
+- production 禁止 memory state 与 local scheduler。session、run、confirmation、cost、job、audit、idempotency、dead-letter 使用统一持久化契约；
+- 内置 file adapter 使用同目录 `wx` 排他锁、checksum、fsync、原子 rename，损坏时拒绝启动；它保证同主机多进程协调,不保证跨主机/共享网络文件系统，跨节点副本必须使用通过 contract tests 的事务/CAS driver；
+- timeout 与 client cancellation 要传播到 provider/tool；bulkhead 与 circuit breaker 防止局部故障拖垮进程；write/workflow/job handler 的未分类异常默认 unknown，只有明确 `unknownOutcome:false` 的已知拒绝允许 bounded retry；DLQ 故障不能覆盖主错误或删除 tombstone；
+- `POST /chat`/stream 的 request idempotency 绑定 principal+route+body，manual job 强制 `Idempotency-Key` 并派生稳定 runId；同 key 不得执行不同 body/job；
+- durable scheduler 使用 lease、fencing token 与 execution key 去重，明确 missed-run policy；达到最大尝试次数先写终态再进入 dead-letter，未知结果进入永不自动重放的 reconciliation。execution ledger 不默认保存业务 result，具有硬容量上限；prune 需要显式风险确认且不允许删除 running/未对账记录。
+- scheduler job 必须有受限 timeout 并消费 cancellation signal；timeout 或已过期 running lease 只能进入 reconciliation，不得以 fencing 能保护 ledger 为由重放无法撤销的外部 effect；内置 patrol webhook 传递稳定 idempotency key。
+- HTTP 完整响应的短期幂等缓存必须在启动/管理/容量/新 claim 路径全局 sweep，不能依赖同一 key 再次访问；到期只删业务正文，不删阻止 replay 的 tombstone/digest。
+
+### Telemetry、审计与 dashboard
+
+- `TELEMETRY_ENABLED=false` 是隐私默认值。关闭时 exporter 零请求；启用必须显式配置 OTLP endpoint，并只允许脱敏后的 metadata attributes；
+- telemetry 与 audit 分离。Audit 记录 actor/tenant/action/resource/policy decision/outcome/idempotency 等元数据并维护 hash chain，不记录 prompt、Authorization、tool arguments/results 或业务 payload；
+- production 非 loopback listener 必须由可信私网 HTTPS ingress 终止 TLS 并显式声明；外部 LLM/backend/notify/OTLP URL 必须 HTTPS。API/SSE 响应 `no-store`，调用方 path/request-id 不得原样进入 telemetry；未认证 slow body 必须有明确连接/时间上限；
+- audit 使用 durable chain-head checkpoint 与硬容量；tool/agent/webhook/scheduler/管理写操作以原子 `started` 事件在 effect 前占用容量，不能用先查容量再执行的 TOCTOU 方案。满载或审计不可用时 effect fail closed；scheduler guard 必须同时覆盖自动 tick 与 manual run。预算/配额拒绝及未认证请求不消耗 pre-effect 槽位。归档/轮换必须保留完整链和 head，不能静默删证据。OpenAPI/MCP tool result 有 bytes/depth/nodes 边界，driver 原始 error message 不进入 provider transcript；
+- dashboard 只允许 operator/admin/auditor 的 GET/HEAD，按页面 capability 授权，在服务端脱敏与分页；它不执行审批、重试、配置或 telemetry 开关。
+
+### 迁移与回滚
+
+- state schema 迁移只允许显式逐版本向前；checksum 错误、缺 migration step、或 snapshot 版本高于运行时都会 fail closed；
+- 发布前备份迁移前 snapshot 并在副本演练。回滚时先停止所有写入，再分别决定应用回滚与数据 snapshot 恢复；旧二进制不得读取新 schema；
+- tool 已在外部业务系统造成的写入不随 state snapshot 自动回滚，必须走业务补偿流程并保留审计证据。完整步骤见 [生产运行指南](./production-profile.md)。
+
 ## 脱敏检查(提交与发布前强制)
 
 ### 基本用法
@@ -82,12 +118,37 @@
 npm run check:sanitized
 ```
 
-扫描工作树全部文本文件(排除 `.git`、`node_modules`),两类规则:
+默认脚本命令与 `npm run check` 都以 `--strict` 扫描工作树全部候选文件(仅内建排除 `.git`、`node_modules`),两类规则:
 
-- **密钥形态规则(内置)**:通用密钥模式——常见 LLM 服务商的 API key 前缀、AWS AccessKey 形态、PEM 私钥头、GitHub token 形态、超长十六进制、`api_key/secret/token = "<长字面量>"` 且值不是 `${...}` / `process.env` / 占位符(完整模式清单见 `bin/sanitize-patterns.cjs`);
+- **密钥形态规则(内置)**:通用密钥模式——OpenAI/Anthropic/Google 等 provider key、Slack token、AWS AccessKey、PEM 私钥头、GitHub token、JWT、带引号或 dotenv/shell 无引号的 credential assignment;值为 `${...}` / `process.env` / 明确占位符时跳过(完整模式清单见 `bin/sanitize-patterns.cjs`);
 - **词面规则(全部外置)**:随包的 `bin/sanitize-patterns.cjs` **刻意不内置任何项目/公司专有词**——即使以转义或编码形式携带,词表本身也会泄露它要保护的私有词汇。你的专有词一律走下述私有 denylist。
 
-命中输出 `文件:行号` 与掩码片段(前 3 后 3 字符,中间 `***`),**不回显全值**;零命中退出码为 0,可直接挂 CI。
+命中输出 `文件:行号` 与掩码片段(前 3 后 3 字符,中间 `***`),**不回显全值**;同时始终输出 skipped 清单及原因。strict 下任何 unreadable/stat/read 失败、symlink、未批准二进制、超 5 MiB 或非 UTF-8 文件都会 fail closed,不得以“未命中”形式静默通过。`check-release.cjs` 复用同一份 `sanitize-patterns.cjs`,防止工作树与打包门禁规则漂移。
+
+### 受控 skip manifest
+
+源码包原则上不应包含二进制或超大文件。若工作树审计确有受控例外,只能使用精确路径、精确 reason 与明确 justification 的 JSON manifest:
+
+```json
+{
+  "schemaVersion": "1.0",
+  "skips": [
+    {
+      "path": "assets/generated.bin",
+      "reason": "binary-extension",
+      "justification": "Generated artifact is verified by the deterministic asset pipeline."
+    }
+  ]
+}
+```
+
+```bash
+node bin/check-sanitized.cjs --strict --skip-manifest /path/to/controlled-skips.json
+```
+
+- reason 只允许 `binary-extension`、`binary-content`、`invalid-utf8`、`oversized`;
+- 不允许 glob、目录级绕过或批准 unreadable/stat/read 错误;
+- 未使用、路径不存在或 reason 不匹配的 manifest 条目同样失败,避免例外长期漂移。
 
 ### 私有 denylist(`--extra-banned`)
 

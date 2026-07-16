@@ -8,11 +8,11 @@
 - **根因**:开发图省事写 `process.env.LLM_API_KEY || "sk-xxxx"` 或把内网网关地址当默认值;评审只验证功能、不看默认值分支。
 - **守卫**:配置层 fail-fast——必填环境变量缺失直接抛错退出,任何配置项不得有可用的密钥 / 域名默认值;发布前跑脱敏扫描(`npm run check` 内的 check-sanitized);代码评审专项 grep 所有 `||`、`??` 默认值与形如密钥的字面量。
 
-## 2. `.gitignore` 不含 `.env` / `node_modules`
+## 2. `.gitignore` 不含 `.env` / `local` / `node_modules`
 
-- **症状**:`.env` 或依赖目录被提交,真实密钥进入 git 历史;之后即使删除文件,历史提交里仍能翻出。
-- **根因**:实例化 scaffold 时没有带出 `.gitignore`(复制工具跳过隐藏文件),或新建仓库时忘了初始化忽略规则。
-- **守卫**:scaffold 自带 `.gitignore`(至少含 `.env`、`node_modules/`、`*.log`);初始化工具幂等确保目标工作区 `.gitignore` 收录敏感路径;一旦发现密钥已入历史,**必须轮换密钥**,只删文件不算处置。
+- **症状**:`.env`、`local/state.json`、同目录 lock/tmp/bak 或依赖目录被提交,凭证、业务状态或审批元数据进入 git 历史;之后即使删除文件,历史提交里仍能翻出。
+- **根因**:实例化 scaffold 时没有带出 `.gitignore`(复制工具跳过隐藏文件),或漏了相对 cwd 生成的 `scaffold/local/` 运行时产物。
+- **守卫**:scaffold 自带 `.gitignore`(至少含 `.env`、`/local/`、`node_modules/`、`*.log`);初始化工具幂等确保目标工作区 `.gitignore` 收录私有路径和 `business-agent/scaffold/local/` 防御性规则;smoke 用真实 `git check-ignore` 验证 state/lock/tmp/bak;一旦发现密钥或业务状态已入历史,**必须轮换密钥并评估状态暴露**,只删文件不算处置。
 
 ## 3. 月度成本追踪定义了未接线
 

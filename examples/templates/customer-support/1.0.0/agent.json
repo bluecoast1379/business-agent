@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "customer-support-agent",
+  "version": "1.0.0",
+  "model": "mock",
+  "systemPromptRef": "README.md#behavior",
+  "tools": [
+    "get_case_summary",
+    "search_help_articles",
+    "escalate_support_case"
+  ],
+  "maxTurns": 6,
+  "maxTokens": 768
+}

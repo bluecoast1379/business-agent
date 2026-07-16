@@ -4,6 +4,22 @@
 
 > 说明:版本条目描述**仓库内容**;某版本是否已发布到 npm registry 以 registry 实际状态为准,本文件不做保证。对外分发前请按 [docs/install.md](./docs/install.md) 的通道与验收清单执行。
 
+## [Unreleased]
+
+## [0.3.0] - 2026-07-16
+
+### Added
+
+- **Production profile**:principal/RBAC/tenant quota、统一 durable state contract、可靠工具执行、durable scheduler、OpenAI-compatible provider、privacy-off telemetry + hash-chain audit、只读运维 dashboard 与确定性 eval runner。
+- **版本化行业模板**:retail、customer-support、finance-ops starter pack,每套包含 agent、工具 policy manifest、workflow、eval JSONL 与阈值;template matrix 同时执行结构校验与 deterministic eval。
+- **发布证据链**:adapter conformance、完整 Node tests、eval/template gates、SBOM 与 packed-artifact release scan 接入统一 `npm run check`。
+
+### Security
+
+- production 启动拒绝空 principal、memory state 与 local scheduler;工具 policy 缺项、state checksum/migration 异常与 dashboard 越权全部 fail closed。
+- Anthropic/OpenAI-compatible 响应实施 4 MiB 字节上限、可取消读取与统一 usage/stop/tool-call 契约;production 要求每个模型的精确价格条目，不再允许未知模型通过通用默认价低估成本。
+- Telemetry 默认关闭,启用后仅导出 allowlist 脱敏元数据;dashboard 只读且不会隐式开启采集。
+
 ## [0.2.0] - 2026-07-14
 
 ### Changed

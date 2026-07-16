@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://business-agent.local/schemas/eval-case.schema.json",
+  "title": "Business Agent Eval Case",
+  "type": "object",
+  "required": ["schemaVersion", "id", "input", "expected"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{2,127}$" },
+    "slice": { "type": "string" },
+    "input": { "type": "string", "minLength": 1 },
+    "mockOutput": { "type": "string" },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contains": { "type": "array", "items": { "type": "string" } },
+        "notContains": { "type": "array", "items": { "type": "string" } },
+        "exact": { "type": "string" },
+        "maxCostUsd": { "type": "number", "minimum": 0 },
+        "safety": { "enum": ["required", "informational"] }
+      }
+    }
+  }
+}

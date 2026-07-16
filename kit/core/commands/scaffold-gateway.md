@@ -33,7 +33,7 @@ agent-gateway/
 ├── package.json
 ├── README.md
 ├── .env.example        # [修改] 增补本 agent 的 *_env 键名与注释
-├── .gitignore          # .env / node_modules/ / *.log
+├── .gitignore          # .env / /local/ / node_modules/ / *.log
 └── src/
     ├── index.js
     ├── config.js
@@ -57,6 +57,7 @@ agent-gateway/
 
 - [ ] 闸门三条检查全部通过并在报告中留痕;未通过时未写任何代码。
 - [ ] `agent-gateway/` 复制完整(含 `.gitignore` 等隐藏文件),demo toolpack 保留。
+- [ ] `.gitignore` 根定位忽略 `/local/`,并用 `git check-ignore` 确认默认 `state.json` 以及 lock/tmp/bak 产物不可追踪。
 - [ ] `01-tool-contracts.yaml` 中每条工具都有对应 `defineTool` 实现:scope 注入、写确认门、summary/raw 与契约一致。
 - [ ] 系统提示词为运行时组装函数,知识文件被运行时读取(读不到会报错)。
 - [ ] `.env.example` 覆盖全部所需键名;生成物中零真实密钥、零真实域名(自查 grep 通过)。

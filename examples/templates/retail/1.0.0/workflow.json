@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "id": "retail-restock-flow",
+  "version": "1.0.0",
+  "initial": "inspect",
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "storeId": { "type": "string" },
+      "tenantId": { "type": "string" }
+    },
+    "required": ["storeId", "tenantId"],
+    "additionalProperties": false
+  },
+  "nodes": [
+    {
+      "id": "inspect",
+      "type": "task",
+      "handler": "inspectInventory",
+      "next": "route"
+    },
+    {
+      "id": "route",
+      "type": "branch",
+      "handler": "chooseRestockRoute",
+      "branches": {
+        "no-action": "done",
+        "restock": "approval"
+      },
+      "default": "done"
+    },
+    {
+      "id": "approval",
+      "type": "interrupt",
+      "next": "handoff"
+    },
+    {
+      "id": "handoff",
+      "type": "handoff",
+      "handler": "handoffRestockRequest",
+      "next": "done"
+    },
+    {
+      "id": "done",
+      "type": "end"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "retail-ops-agent",
+  "version": "1.0.0",
+  "model": "mock",
+  "systemPromptRef": "README.md#behavior",
+  "tools": [
+    "get_store_inventory",
+    "get_reorder_candidates",
+    "create_restock_request"
+  ],
+  "maxTurns": 6,
+  "maxTokens": 768
+}

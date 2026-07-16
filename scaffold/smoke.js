@@ -23,6 +23,7 @@ const { createCostTracker } = await import('./src/runtime/cost-tracker.js');
 const { createSessionStore } = await import('./src/runtime/session-store.js');
 const { createScheduler } = await import('./src/runtime/scheduler.js');
 const { buildRegistry } = await import('./src/agents/registry.js');
+const { createPrincipal } = await import('./src/auth/principal.js');
 const { wrapWriteTool, createConfirmationCenter } = await import('./src/guardrails/confirm-gate.js');
 const { withScope } = await import('./src/guardrails/scoped-tool.js');
 const { defineTool, validateArgs } = await import('./src/runtime/tool.js');
@@ -35,20 +36,30 @@ const costTracker = createCostTracker();
 const sessionStore = createSessionStore({ ttlMs: 60_000 });
 const confirmations = createConfirmationCenter();
 const registry = buildRegistry({ config, provider, costTracker, sessionStore, confirmations });
+// The top-customer demo tool is intentionally platform-scoped. Exercise the
+// tool loop under an explicit trusted operator identity instead of weakening
+// the production authorization policy for a smoke test.
+const platformOperator = createPrincipal({
+  subjectId: 'smoke-platform-operator',
+  tenantId: null,
+  roles: ['operator'],
+  scopes: ['tools:execute'],
+  authType: 'internal-test',
+});
 
 const steps = [];
 const step = (name, fn) => steps.push({ name, fn });
 
 step('mock handleMessage round-trip (tool loop + [mock] marker)', async () => {
-  const r1 = await registry.handleMessage('smoke-1', 'show me the top customers');
+  const r1 = await registry.handleMessage('smoke-1', 'show me the top customers', { principal: platformOperator });
   assert.ok(r1.text.includes('[mock] top customers:'), `expected "[mock] top customers:" in: ${r1.text}`);
   assert.ok(r1.text.includes('Top'), `expected tool summary first line in: ${r1.text}`);
-  const r2 = await registry.handleMessage('smoke-2', 'hello there');
+  const r2 = await registry.handleMessage('smoke-2', 'hello there', { principal: platformOperator });
   assert.ok(r2.text.includes('[mock] echo: hello there'), `expected echo in: ${r2.text}`);
 });
 
 step('confirm-gate: model cannot self-approve; human approval executes; single-use', async () => {
-  const tool = registry.tools.find((t) => t.name === 'create_credit_note');
+  const tool = registry.tools.get('create_credit_note');
   assert.ok(tool, 'create_credit_note tool missing');
   const invoice = invoices[0];
   const args = { customerId: invoice.customerId, invoiceId: invoice.id, amountUsd: 1.5, reason: 'smoke test claim' };
@@ -88,8 +99,13 @@ step('confirm-gate entry expiry', async () => {
   let executed = 0;
   const center = createConfirmationCenter({ ttlMs: 10 });
   const gated = wrapWriteTool(
-    defineTool({ name: 'noop_write', description: 'test', handler: () => { executed += 1; return { ok: true }; } }),
-    { center },
+    defineTool({
+      name: 'noop_write',
+      description: 'test',
+      params: { properties: { a: { type: 'number' } }, required: ['a'] },
+      handler: () => { executed += 1; return { ok: true }; },
+    }),
+    { center, summarize: ({ a }) => `Set smoke value to ${a}` },
   );
   const pendingResult = await gated.handler({ a: 1 });
   await new Promise((resolve) => setTimeout(resolve, 30));
@@ -101,8 +117,8 @@ step('confirm-gate entry expiry', async () => {
 
 step('same-session concurrent requests are serialized (no history loss)', async () => {
   const [a, b] = await Promise.all([
-    registry.handleMessage('smoke-concurrent', 'hello one'),
-    registry.handleMessage('smoke-concurrent', 'hello two'),
+    registry.handleMessage('smoke-concurrent', 'hello one', { principal: platformOperator }),
+    registry.handleMessage('smoke-concurrent', 'hello two', { principal: platformOperator }),
   ]);
   assert.ok(a.text.includes('[mock]') && b.text.includes('[mock]'), 'both replies must arrive');
   const session = sessionStore.getOrCreate('smoke-concurrent');

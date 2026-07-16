@@ -73,6 +73,16 @@ function checkPrerequisites() {
 
 function main() {
   checkPrerequisites();
+  for (const relPath of [
+    'scaffold/local/state.json',
+    'scaffold/local/state.json.lock',
+    'scaffold/local/.state.json.tmp-4242-1',
+    'scaffold/local/state.json.bak',
+    'scaffold/local/state.json.lock.reaper'
+  ]) {
+    const ignored = spawnSync('git', ['-C', KIT_ROOT, 'check-ignore', '--quiet', '--', relPath], { encoding: 'utf8' });
+    assert(ignored.status === 0, `源码仓忽略运行时状态产物: ${relPath}`);
+  }
   const manifest = loadCommandManifest(path.join(KIT_ROOT, 'kit', 'core', 'command-manifest.yaml'));
   const commandIds = manifest.commands.map((c) => c.id);
 
@@ -97,7 +107,37 @@ function main() {
 
     const gitignore = read(path.join(t1, '.gitignore'));
     assert(gitignore.includes('business-agent/local/'), '.gitignore 含 business-agent/local/');
+    assert(gitignore.includes('business-agent/scaffold/local/'), '.gitignore 含 business-agent/scaffold/local/ 防御性规则');
     assert(gitignore.split(/\r?\n/).some((l) => l.trim() === '.env'), '.gitignore 含 .env');
+
+    const scaffoldGitignorePath = path.join(t1, 'business-agent', 'scaffold', '.gitignore');
+    assert(fs.existsSync(scaffoldGitignorePath), 'scaffold/gitignore.template 已物化为 scaffold/.gitignore');
+    const scaffoldGitignore = read(scaffoldGitignorePath);
+    assert(scaffoldGitignore.split(/\r?\n/).some((l) => l.trim() === '/local/'), 'scaffold/.gitignore 含根定位 /local/ 规则');
+
+    const runtimeStateDir = path.join(t1, 'business-agent', 'scaffold', 'local');
+    fs.mkdirSync(runtimeStateDir, { recursive: true });
+    const runtimeArtifacts = [
+      'business-agent/scaffold/local/state.json',
+      'business-agent/scaffold/local/state.json.lock',
+      'business-agent/scaffold/local/.state.json.tmp-4242-1',
+      'business-agent/scaffold/local/state.json.bak',
+      'business-agent/scaffold/local/state.json.lock.reaper'
+    ];
+    for (const relPath of runtimeArtifacts) {
+      fs.writeFileSync(path.join(t1, relPath), 'synthetic runtime state\n');
+    }
+    const gitInit = spawnSync('git', ['-C', t1, 'init', '--quiet'], { encoding: 'utf8' });
+    assert(gitInit.status === 0, `临时目标工作区可初始化 git: ${gitInit.stderr}`);
+    for (const relPath of runtimeArtifacts) {
+      const ignored = spawnSync('git', ['-C', t1, 'check-ignore', '--quiet', '--', relPath], { encoding: 'utf8' });
+      assert(ignored.status === 0, `生成项目忽略运行时状态产物: ${relPath}`);
+    }
+    const trackedControl = 'business-agent/scaffold/src/local/state.json';
+    fs.mkdirSync(path.dirname(path.join(t1, trackedControl)), { recursive: true });
+    fs.writeFileSync(path.join(t1, trackedControl), 'negative control\n');
+    const controlIgnored = spawnSync('git', ['-C', t1, 'check-ignore', '--quiet', '--', trackedControl], { encoding: 'utf8' });
+    assert(controlIgnored.status === 1, '/local/ 根定位规则不会误忽略 src/local/');
 
     const agents = read(path.join(t1, 'AGENTS.md'));
     assert(agents.includes(FENCE_BEGIN) && agents.includes(FENCE_END), 'AGENTS.md 栅栏标记齐全');
@@ -125,6 +165,14 @@ function main() {
     fs.appendFileSync(coreManifestPath, '\n# junk-line-should-be-refreshed\n');
     const editedAdapterPath = path.join(t1, '.claude', 'commands', `${commandIds[0]}.md`);
     fs.writeFileSync(editedAdapterPath, '# 用户手工改写,无指纹\n');
+    fs.writeFileSync(path.join(t1, '.gitignore'), gitignore
+      .split(/\r?\n/)
+      .filter((line) => line.trim() !== 'business-agent/scaffold/local/')
+      .join('\n'));
+    fs.writeFileSync(scaffoldGitignorePath, scaffoldGitignore
+      .split(/\r?\n/)
+      .filter((line) => line.trim() !== '/local/')
+      .join('\n'));
 
     const upgradeResult = runInit(['--target', t1, '--tools', 'claude,cursor,copilot', '--yes', '--upgrade']);
     assert(upgradeResult.status === 0, `upgrade 退出码应为 0,实际 ${upgradeResult.status}\n${upgradeResult.stdout}\n${upgradeResult.stderr}`);
@@ -133,6 +181,8 @@ function main() {
     assert(profileAfter.includes('keep-me-after-upgrade'), 'upgrade 后 business-profile.yaml 未被覆盖(preserveOnUpgrade)');
     assert(fs.existsSync(`${profilePath}.business-agent-new`), 'upgrade 后写出 business-profile.yaml.business-agent-new');
     assert(!read(coreManifestPath).includes('junk-line-should-be-refreshed'), 'upgrade 后 core 已整体刷新(junk 行消失)');
+    assert(read(path.join(t1, '.gitignore')).split(/\r?\n/).some((line) => line.trim() === 'business-agent/scaffold/local/'), 'upgrade 为旧工作区幂等补入 scaffold/local 忽略规则');
+    assert(read(scaffoldGitignorePath).split(/\r?\n/).some((line) => line.trim() === '/local/'), 'upgrade 刷新 scaffold 后恢复 /local/ 忽略规则');
     assert(read(editedAdapterPath) === '# 用户手工改写,无指纹\n', '无指纹的同名命令文件未被覆盖');
     assert(fs.existsSync(`${editedAdapterPath}.business-agent-new`), '无指纹冲突文件旁写出 .business-agent-new');
     assert(!fs.existsSync(path.join(t1, 'business-agent', 'INITIALIZATION_QUESTIONS.md.business-agent-new')), '未改动的 preserve 文件不产生 .business-agent-new');

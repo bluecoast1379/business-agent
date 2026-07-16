@@ -97,13 +97,13 @@ business-agent-init --target . --tools claude,cursor --upgrade
 
 正式使用前逐项确认:
 
-- [ ] `node --version` ≥ 18;
-- [ ] 在 kit 目录 `npm run check` 全绿(语法 / 脱敏 / 命令清单 / scaffold 冒烟 / init 冒烟);
+- [ ] `node --version` ≥ 22;
+- [ ] 在 kit 目录 `npm run check` 全绿(语法 / 脱敏 / manifest / adapter / templates / runtime tests / eval / scaffold / release);
 - [ ] 初始化后 `business-agent/core/`、`business-agent/scaffold/`、`business-agent/business-profile.yaml`、`business-agent/local/` 齐备;
 - [ ] target `.gitignore` 含 `business-agent/local/` 与 `.env`;
 - [ ] 根 `AGENTS.md` 有 business-agent 栅栏块,且原有内容(如有)未被改动;
 - [ ] 所选工具的全部 10 个命令入口已生成(claude/cursor/copilot),或 codex 场景下 AGENTS.md 栅栏块内含命令索引;
 - [ ] 在真实 AI 工具中运行 `/agent-status`,能输出规划状态汇报;
-- [ ] `business-agent/scaffold/` 内 `LLM_PROVIDER=mock GATEWAY_AUTH_TOKEN=dev-token npm run smoke` 通过;
+- [ ] `business-agent/scaffold/` 内 `LLM_PROVIDER=mock GATEWAY_AUTH_TOKEN=development-token npm run smoke` 通过;
 - [ ] 初始化过程无任何远程 Git、部署、数据库或生产配置动作;
 - [ ] 团队私有 denylist 建立在**仓库之外**,并纳入 `check:sanitized --extra-banned` 例行检查(见 [docs/security-baseline.md](./docs/security-baseline.md))。

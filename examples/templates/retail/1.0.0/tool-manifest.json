@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0",
+  "id": "retail-toolpack",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "get_store_inventory",
+      "description": "Read a tenant-bound fictional store inventory snapshot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "storeId": { "type": "string", "minLength": 1 }
+        },
+        "required": ["storeId"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator"],
+        "tenantScope": "customer",
+        "dataClass": "tenant-inventory",
+        "effect": "read",
+        "approval": "none",
+        "idempotency": "none",
+        "timeoutMs": 5000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "storeId": { "type": "string" },
+            "skuCount": { "type": "integer" },
+            "asOf": { "type": "string" }
+          },
+          "required": ["storeId", "skuCount", "asOf"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "get_reorder_candidates",
+      "description": "Read low-stock candidates for one tenant-bound fictional store.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "storeId": { "type": "string", "minLength": 1 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100 }
+        },
+        "required": ["storeId"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator"],
+        "tenantScope": "customer",
+        "dataClass": "tenant-inventory",
+        "effect": "read",
+        "approval": "none",
+        "idempotency": "none",
+        "timeoutMs": 5000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "storeId": { "type": "string" },
+            "candidateCount": { "type": "integer" },
+            "skuIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["storeId", "candidateCount", "skuIds"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "create_restock_request",
+      "description": "Request a human-approved fictional restock without placing a supplier order.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "storeId": { "type": "string", "minLength": 1 },
+          "skuIds": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["storeId", "skuIds"],
+        "additionalProperties": false
+      },
+      "policy": {
+        "version": "1.0.0",
+        "audiences": ["operator"],
+        "tenantScope": "customer",
+        "dataClass": "tenant-restock-request",
+        "effect": "write",
+        "approval": "human",
+        "idempotency": "required",
+        "timeoutMs": 10000,
+        "audit": "metadata",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "requestId": { "type": "string" },
+            "storeId": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending-approval"] }
+          },
+          "required": ["requestId", "storeId", "status"],
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

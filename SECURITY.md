@@ -4,7 +4,8 @@
 
 | 版本 | 状态 |
 | --- | --- |
-| 0.1.x | 接收漏洞报告(当前开发线,Unreleased) |
+| Unreleased / 0.3.x | 接收漏洞报告(当前开发线) |
+| 0.1.x | 仅评估高危问题;建议升级 |
 
 ## 私密报告漏洞
 
@@ -18,7 +19,9 @@
 
 - 初始化器越界写文件(逃逸 `--target`)、覆盖 preserveOnUpgrade 文件、破坏 `AGENTS.md` 栅栏外内容;
 - 检查脚本或初始化器的命令注入 / 路径穿越;
-- scaffold 的鉴权绕过(`/chat`、`/status`、`/jobs/*` 未持 `GATEWAY_AUTH_TOKEN` 可达)、webhook 验签绕过、写操作确认闸(confirm-gate)绕过、scope 绑定失效(越权租户);
+- scaffold 的认证/RBAC/tenant quota 绕过(`/chat`、`/status`、`/jobs/*` 无合格 principal/role/scope 可达)、webhook 身份/验签/replay 绕过、写操作确认闸绕过、tool policy 或 scope 绑定失效(越权租户);
+- durable state 的 checksum/migration/CAS/事务失效、幂等写重放、scheduler lease/fencing 绕过或 dead-letter 丢失;
+- telemetry 默认关闭却仍外发、redaction 绕过、audit hash chain 失效,或 dashboard 泄露 prompt/凭证/tool payload 与出现写接口;
 - 成本 / 预算护栏失效(预算超限仍继续调用);
 - 仓库内容中的敏感信息泄漏(词面或密钥形态)。
 
@@ -41,4 +44,4 @@ node bin/check-sanitized.cjs --extra-banned /path/outside-repo/private-denylist.
 
 ## 使用者的安全基线
 
-scaffold 的运行时安全边界(fail-fast 配置、无兜底密钥、写操作人工确认、最小权限后端角色、webhook 验签)见 [docs/security-baseline.md](./docs/security-baseline.md);`harden-agent` 命令会对照「网关十大事故清单」逐项审查你的实例。
+scaffold 的运行时安全边界(fail-fast production profile、principal/RBAC、持久化与可靠执行、隐私默认关闭、写操作人工确认、最小权限后端角色、webhook 验签)见 [docs/security-baseline.md](./docs/security-baseline.md) 与 [生产运行指南](./docs/production-profile.md);`harden-agent` 命令会对照「网关十大事故清单」逐项审查你的实例。
