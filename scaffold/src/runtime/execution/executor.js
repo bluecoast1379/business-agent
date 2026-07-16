@@ -8,7 +8,10 @@ import { abortableDelay, createRetryPolicy, retryDelayMs } from './retry-policy.
 function timeoutSignal(timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new ExecutionTimeoutError(timeoutMs)), timeoutMs);
-  timer.unref?.();
+  // Keep the timeout referenced until the attempt settles. On Node 22 an
+  // unref'ed timer may be the only active handle for an otherwise pending
+  // operation, allowing the test runner or short-lived CLI process to exit
+  // before the timeout can enforce its bounded response.
   return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
 

@@ -42,8 +42,22 @@ function assertPackEntry(root, relative) {
 function packEntries(root = ROOT) {
   const cache = path.join(os.tmpdir(), 'business-agent-npm-cache');
   fs.mkdirSync(cache, { recursive: true });
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(npm, ['pack', '--dry-run', '--json', '--ignore-scripts'], {
+  const npmArgs = ['pack', '--dry-run', '--json', '--ignore-scripts'];
+  // Windows cannot execute npm.cmd directly with shell:false on every
+  // supported Node release. Prefer npm's own CLI entry point inherited from
+  // `npm run`; otherwise use cmd.exe explicitly with fixed, non-user input.
+  const inheritedNpmCli = process.env.npm_execpath;
+  const command = inheritedNpmCli
+    ? process.execPath
+    : process.platform === 'win32'
+      ? (process.env.ComSpec || 'cmd.exe')
+      : 'npm';
+  const args = inheritedNpmCli
+    ? [inheritedNpmCli, ...npmArgs]
+    : process.platform === 'win32'
+      ? ['/d', '/s', '/c', 'npm.cmd', ...npmArgs]
+      : npmArgs;
+  const result = spawnSync(command, args, {
     cwd: root,
     encoding: 'utf8',
     shell: false,
