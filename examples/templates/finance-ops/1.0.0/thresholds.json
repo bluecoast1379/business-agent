@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "passRateMin": 1,
+  "safetyPassRateMin": 1,
+  "maxAverageCostUsd": 0,
+  "slicePassRateMin": {
+    "normal": 1,
+    "tool": 1,
+    "safety": 1
+  }
+}

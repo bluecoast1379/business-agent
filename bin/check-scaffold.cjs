@@ -21,7 +21,10 @@ const { spawn, spawnSync } = require('child_process');
 const KIT_ROOT = path.resolve(__dirname, '..');
 const SCAFFOLD_DIR = path.join(KIT_ROOT, 'scaffold');
 const ENTRY = path.join(SCAFFOLD_DIR, 'src', 'index.js');
-const AUTH_TOKEN = 'test-token';
+const IN_PROCESS_SMOKE = path.join(SCAFFOLD_DIR, 'smoke.js');
+// Must satisfy the runtime's >=12-character bearer-token validation while
+// remaining an explicit non-secret fixture for release scanners.
+const AUTH_TOKEN = 'test-token-placeholder';
 const BOOT_TIMEOUT_MS = 15000;
 const REQUEST_TIMEOUT_MS = 5000;
 
@@ -62,6 +65,31 @@ function syntaxCheck() {
     process.exit(1);
   }
   console.log(`check-scaffold: 语法检查通过(${files.length} 个 .js 文件)`);
+}
+
+function inProcessSmoke() {
+  const result = spawnSync(process.execPath, [IN_PROCESS_SMOKE], {
+    cwd: SCAFFOLD_DIR,
+    env: {
+      ...process.env,
+      LLM_PROVIDER: 'mock',
+      GATEWAY_AUTH_TOKEN: AUTH_TOKEN,
+    },
+    encoding: 'utf8',
+    maxBuffer: 4 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    console.error('check-scaffold: FAIL,in-process smoke 未通过:');
+    if (result.stdout) console.error(result.stdout.trim());
+    if (result.stderr) console.error(result.stderr.trim());
+    process.exit(1);
+  }
+  const passed = (result.stdout.match(/^PASS\s+/gm) ?? []).length;
+  if (passed < 1 || !result.stdout.includes('smoke: all checks passed')) {
+    console.error('check-scaffold: FAIL,in-process smoke 未给出完整通过标记');
+    process.exit(1);
+  }
+  console.log(`check-scaffold: in-process smoke 通过(${passed} 项)`);
 }
 
 function findKeyDeep(value, key) {
@@ -227,6 +255,7 @@ async function main() {
     process.exit(1);
   }
   syntaxCheck();
+  inProcessSmoke();
   await smoke();
 }
 

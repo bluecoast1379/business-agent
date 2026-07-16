@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0",
+  "id": "finance-ops-flow",
+  "version": "1.0.0",
+  "initial": "reconcile",
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "batchId": { "type": "string" },
+      "tenantId": { "type": "string" }
+    },
+    "required": ["batchId", "tenantId"],
+    "additionalProperties": false
+  },
+  "nodes": [
+    {
+      "id": "reconcile",
+      "type": "task",
+      "handler": "reconcileBatch",
+      "next": "route"
+    },
+    {
+      "id": "route",
+      "type": "branch",
+      "handler": "classifyReconciliation",
+      "branches": {
+        "matched": "done",
+        "exception": "review"
+      },
+      "default": "review"
+    },
+    {
+      "id": "review",
+      "type": "task",
+      "handler": "prepareExceptionReview",
+      "next": "approval"
+    },
+    {
+      "id": "approval",
+      "type": "interrupt",
+      "next": "handoff"
+    },
+    {
+      "id": "handoff",
+      "type": "handoff",
+      "handler": "handoffAdjustmentRequest",
+      "next": "done"
+    },
+    {
+      "id": "done",
+      "type": "end"
+    }
+  ]
+}

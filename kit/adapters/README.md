@@ -9,12 +9,14 @@
 
 ## 支持矩阵
 
-| 工具 | 状态 | 生成位置 | 格式 | 发现方式 |
-| --- | --- | --- | --- | --- |
-| Claude Code | generated | `.claude/commands/<id>.md` | Markdown + front-matter(description / argument-hint) | 斜杠命令自动发现 |
-| Cursor | generated | `.cursor/commands/<id>.md` | 纯 Markdown | 命令面板 / 斜杠命令 |
-| GitHub Copilot | generated | `.github/prompts/<id>.prompt.md` | 纯 Markdown(prompt file) | prompt files |
-| Codex CLI | via-AGENTS.md | 不生成文件 | — | 根 `AGENTS.md` 栅栏块 |
+| 工具 | 结构状态 | 对外认证状态 | 生成位置 | 格式 | 发现方式 |
+| --- | --- | --- | --- | --- | --- |
+| Claude Code | generated | native_not_yet_manually_certified | `.claude/commands/<id>.md` | Markdown + front-matter(description / argument-hint) | 斜杠命令自动发现 |
+| Cursor | generated | native_not_yet_manually_certified | `.cursor/commands/<id>.md` | 纯 Markdown | 命令面板 / 斜杠命令 |
+| GitHub Copilot | generated | native_not_yet_manually_certified | `.github/prompts/<id>.prompt.md` | 纯 Markdown(prompt file) | prompt files |
+| Codex CLI | via-AGENTS.md | native_not_yet_manually_certified | 不生成文件 | — | 根 `AGENTS.md` 栅栏块 |
+
+仓库内的 `self-reported-manual-check` 只是观察记录,不是受信认证证据;在外部 issuer/signature/source-digest 信任链实现并验证前,上表认证状态不得提升。
 
 其他工具(如 trae / kiro / codebuddy)暂不支持:`init-workspace --tools` 传入不支持的工具会明确报错并指向 `docs/support-matrix.md`。
 

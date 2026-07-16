@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0",
+  "id": "customer-support-flow",
+  "version": "1.0.0",
+  "initial": "classify",
+  "stateSchema": {
+    "type": "object",
+    "properties": {
+      "caseId": { "type": "string" },
+      "tenantId": { "type": "string" }
+    },
+    "required": ["caseId", "tenantId"],
+    "additionalProperties": false
+  },
+  "nodes": [
+    {
+      "id": "classify",
+      "type": "task",
+      "handler": "classifyCase",
+      "next": "route"
+    },
+    {
+      "id": "route",
+      "type": "branch",
+      "handler": "chooseSupportRoute",
+      "branches": {
+        "self-service": "answer",
+        "escalate": "approval"
+      },
+      "default": "answer"
+    },
+    {
+      "id": "answer",
+      "type": "task",
+      "handler": "draftGroundedAnswer",
+      "next": "done"
+    },
+    {
+      "id": "approval",
+      "type": "interrupt",
+      "next": "handoff"
+    },
+    {
+      "id": "handoff",
+      "type": "handoff",
+      "handler": "handoffToHumanQueue",
+      "next": "done"
+    },
+    {
+      "id": "done",
+      "type": "end"
+    }
+  ]
+}

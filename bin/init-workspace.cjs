@@ -22,7 +22,11 @@ const FENCE_BEGIN = '<!-- BEGIN business-agent -->';
 const FENCE_END = '<!-- END business-agent -->';
 const NEW_SUFFIX = '.business-agent-new';
 const SUPPORTED_TOOLS = ['claude', 'cursor', 'copilot', 'codex'];
-const GITIGNORE_ENTRIES = ['business-agent/local/', '.env'];
+const GITIGNORE_ENTRIES = [
+  'business-agent/local/',
+  'business-agent/scaffold/local/',
+  '.env'
+];
 
 // ---------------------------------------------------------------------------
 // CLI plumbing
@@ -341,7 +345,7 @@ function ensureGitignore(ws) {
   const gitignorePath = path.join(ws.target, '.gitignore');
   if (!fs.existsSync(gitignorePath)) {
     ws.writeRaw(gitignorePath, `# ${FINGERPRINT}\n${GITIGNORE_ENTRIES.join('\n')}\n`);
-    ws.created.push('.gitignore(含 business-agent/local/ 与 .env)');
+    ws.created.push('.gitignore(含私有配置、scaffold 运行时状态与 .env)');
     return;
   }
   const existing = fs.readFileSync(gitignorePath, 'utf8');
@@ -399,7 +403,7 @@ function printSummary(ws, options) {
   console.log('  1. 编辑 business-agent/business-profile.yaml,把 <TODO> 占位填成你的业务画像;');
   console.log('  2. 查看 business-agent/INITIALIZATION_QUESTIONS.md,补齐未决问题;');
   console.log('  3. 打开你的 AI 工具(如 Claude Code),运行 /agent-status 查看规划状态与下一步命令;');
-  console.log('  4. 私有值只放 business-agent/local/(已 gitignore),文档里只登记键名与用途。');
+  console.log('  4. 私有值只放 business-agent/local/;scaffold 运行时状态保留在 scaffold/local/(均已 gitignore)。');
   console.log('========================================');
 }
 

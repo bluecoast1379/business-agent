@@ -1,16 +1,8 @@
 {
   "name": "business-agent",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "把「业务 AI agent 从规划到上线」编译成可执行工作流 + 可运行网关骨架的开源套件",
   "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bluecoast1379/business-agent.git"
-  },
-  "homepage": "https://github.com/bluecoast1379/business-agent#readme",
-  "bugs": {
-    "url": "https://github.com/bluecoast1379/business-agent/issues"
-  },
   "keywords": [
     "ai-agent",
     "agent-workflow",
@@ -21,6 +13,9 @@
   ],
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "bin": {
     "business-agent-init": "bin/init-workspace.cjs"
@@ -40,15 +35,28 @@
     "NOTICE",
     "SECURITY.md",
     "CODE_OF_CONDUCT.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "sbom.cdx.json"
   ],
   "scripts": {
+    "test": "node bin/run-node-tests.cjs",
     "check:syntax": "node bin/check-syntax.cjs",
-    "check:sanitized": "node bin/check-sanitized.cjs",
+    "check:sanitized": "node bin/check-sanitized.cjs --strict",
     "check:manifest": "node bin/check-command-manifest.cjs",
     "check:scaffold": "node bin/check-scaffold.cjs",
+    "test:security": "node --test scaffold/test/security-regressions.test.js",
     "test:smoke": "node test/smoke.test.cjs",
     "test:manifest": "node test/manifest.test.cjs",
+    "test:runtime": "node bin/run-node-tests.cjs",
+    "check:adapters": "node bin/check-adapter-conformance.cjs",
+    "templates:validate": "node bin/run-template-matrix.mjs validate",
+    "templates:run": "node bin/run-template-matrix.mjs run",
+    "test:templates": "node --test test/templates.test.mjs",
+    "check:templates": "node bin/check-templates.cjs",
+    "check:release": "node bin/check-release.cjs",
+    "eval": "node bin/run-evals.mjs --dataset examples/brewline/evals/billing.jsonl --provider mock --thresholds examples/brewline/evals/thresholds.json",
+    "prepack": "node bin/generate-sbom.cjs && node bin/check-release.cjs",
+    "release:verify": "npm run check",
     "check": "node bin/run-checks.cjs"
   }
 }

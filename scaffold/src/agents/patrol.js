@@ -5,24 +5,45 @@
  * Rule-based on purpose: patrols should be cheap and deterministic; add an LLM
  * summarization step only if the raw findings need narrative.
  */
+import { createHash } from 'node:crypto';
 import { suppliers, invoices, deliveries, daysSince } from '../toolpacks/demo/data.js';
+
+function reportDigest(text) {
+  return createHash('sha256').update(text).digest('hex');
+}
 
 function buildNotifier(config) {
   if (config.notifyWebhookUrl) {
     // Generic outbound notification channel: any endpoint accepting JSON POST.
-    return async (text) => {
+    return async (text, { signal, idempotencyKey } = {}) => {
       try {
-        await fetch(config.notifyWebhookUrl, {
+        const headers = new Headers({ 'content-type': 'application/json' });
+        if (idempotencyKey) headers.set('idempotency-key', idempotencyKey);
+        const response = await fetch(config.notifyWebhookUrl, {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers,
           body: JSON.stringify({ source: 'agent-gateway-patrol', text }),
+          redirect: 'error',
+          signal,
         });
-      } catch (err) {
-        console.error(`[patrol] notify failed (${err.message}); falling back to console:\n${text}`);
+        await response.body?.cancel?.().catch?.(() => {});
+        if (!response.ok) {
+          throw Object.assign(new Error('[patrol] notification endpoint rejected the report'), {
+            code: `PATROL_NOTIFY_HTTP_${response.status}`,
+            unknownOutcome: response.status >= 500 || response.status === 408,
+          });
+        }
+      } catch (rawError) {
+        const error = rawError instanceof Error ? rawError : new Error('[patrol] notification failed');
+        error.code ??= 'PATROL_NOTIFY_UNKNOWN';
+        if (rawError?.unknownOutcome !== false) error.unknownOutcome = true;
+        console.error(`[patrol] notify failed code=${error.code} reportDigest=${reportDigest(text)}`);
+        throw error;
       }
     };
   }
-  return async (text) => console.log(`[patrol]\n${text}`);
+  // Console is an operations sink, not a business-data delivery channel.
+  return async (text) => console.log(`[patrol] report generated digest=${reportDigest(text)} bytes=${Buffer.byteLength(text)}`);
 }
 
 /**
@@ -33,7 +54,7 @@ export function createPatrolJob({ config, notify }) {
   const send = notify ?? buildNotifier(config);
   const { overdueDays, minOnTimeRate } = config.patrol;
 
-  async function runDailyPatrol() {
+  async function runDailyPatrol({ signal, idempotencyKey } = {}) {
     const findings = [];
 
     const overdue = invoices
@@ -60,13 +81,15 @@ export function createPatrolJob({ config, notify }) {
       ? `Daily patrol report (${new Date().toISOString().slice(0, 10)}):\n- ${findings.join('\n- ')}`
       : `Daily patrol report (${new Date().toISOString().slice(0, 10)}): no anomalies found.`;
 
-    await send(report);
+    await send(report, { signal, idempotencyKey });
     return { findings: findings.length, report };
   }
 
   return {
     name: 'daily-patrol',
     schedule: { minute: 0, hour: 8 }, // every day 08:00 local time
+    timeoutMs: 30_000,
+    idempotency: 'required',
     run: runDailyPatrol,
   };
 }

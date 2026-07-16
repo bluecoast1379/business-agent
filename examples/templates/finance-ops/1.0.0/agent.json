@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "finance-ops-agent",
+  "version": "1.0.0",
+  "model": "mock",
+  "systemPromptRef": "README.md#behavior",
+  "tools": [
+    "get_reconciliation_summary",
+    "get_invoice_exception",
+    "create_adjustment_request"
+  ],
+  "maxTurns": 6,
+  "maxTokens": 768
+}

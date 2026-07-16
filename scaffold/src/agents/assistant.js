@@ -51,7 +51,7 @@ export function buildSystemPrompt() {
 /**
  * Create the interactive assistant agent (session reuse handled by registry).
  */
-export function createAssistant({ config, provider, costTracker, tools }) {
+export function createAssistant({ config, provider, costTracker, tools, executor, telemetry }) {
   return createAgent({
     name: 'assistant',
     model: config.llmModel,
@@ -63,5 +63,7 @@ export function createAssistant({ config, provider, costTracker, tools }) {
     provider,
     costTracker,
     priceTable: config.priceTable,
+    executor,
+    telemetry,
   });
 }

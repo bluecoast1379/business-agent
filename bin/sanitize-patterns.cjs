@@ -19,15 +19,29 @@
 const bannedPatterns = [];
 
 // Generic credential shapes. These match *forms*, not any specific value.
+// This is the single source of truth for both the working-tree sanitizer and
+// the packed release scanner. Keep fixtures split/constructed so the scanner
+// source never embeds a credential-shaped value itself.
 const SECRET_PATTERN_SOURCES = [
-  { name: 'llm-api-key', re: 'sk-ant-[A-Za-z0-9_-]{8,}', flags: 'g' },
-  { name: 'aws-access-key-id', re: '\\bAKIA[0-9A-Z]{16}\\b', flags: 'g' },
-  { name: 'private-key-block', re: '-----BEGIN[A-Z ]* PRIVATE KEY-----', flags: 'g' },
-  { name: 'github-token', re: '\\bghp_[A-Za-z0-9]{36}\\b', flags: 'g' },
-  { name: 'long-hex-token', re: '\\b[0-9a-fA-F]{40,}\\b', flags: 'g' },
+  { name: 'private-key', re: '-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----', flags: 'g' },
+  { name: 'provider-key', re: '\\b(?:sk|rk)[_-](?:live|prod)[_-][A-Za-z0-9_-]{16,}\\b', flags: 'g' },
   {
-    name: 'inline-credential',
-    re: '(?:api[_-]?key|secret|token)\\s*[:=]\\s*[\'"]([^\'"]{16,})[\'"]',
+    name: 'provider-token',
+    re: '\\b(?:sk-(?:ant-api\\d{2}-|proj-|svcacct-)?[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|AIza[A-Za-z0-9_-]{30,})\\b',
+    flags: 'g'
+  },
+  { name: 'github-token', re: '\\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,})\\b', flags: 'g' },
+  { name: 'aws-access-key-id', re: '\\b(?:AKIA|ASIA)[A-Z0-9]{16}\\b', flags: 'g' },
+  { name: 'jwt', re: '\\beyJ[A-Za-z0-9_-]{12,}\\.[A-Za-z0-9_-]{12,}\\.[A-Za-z0-9_-]{12,}\\b', flags: 'g' },
+  {
+    name: 'credential-assignment',
+    re: '\\b(?:api[_-]?key|secret|password|token)\\s*[:=]\\s*[\'"]([^\'"\\s]{12,})[\'"]',
+    flags: 'gi',
+    valueGroup: 1
+  },
+  {
+    name: 'credential-assignment-unquoted',
+    re: '^[ \\t]*(?:export[ \\t]+)?[A-Z0-9_]*(?:API_?KEY|TOKEN|PASSWORD|SECRET|PRIVATE_?KEY|ACCESS_?KEY)[A-Z0-9_]*[ \\t]*=[ \\t]*([A-Za-z0-9_./+=:@-]{12,})[ \\t]*(?:#.*)?$',
     flags: 'gi',
     valueGroup: 1
   }
@@ -48,7 +62,7 @@ const PLACEHOLDER_VALUE = new RegExp(
     '^<[^>]+>$', // <YOUR-KEY-HERE>
     '^\\{\\{[^}]*\\}\\}$', // {{ template }}
     '^(x{4,}|\\*{4,}|\\.{4,}|_{4,}|-{4,})$', // masked filler
-    '(placeholder|example|sample|dummy|changeme|change-me|your[-_])',
+    '(placeholder|example|synthetic|sample|smoke|fixture|test|redacted|dummy|changeme|change-me|your[-_])',
     '^(todo|tbd|fixme)\\b'
   ].join('|'),
   'i'

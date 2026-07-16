@@ -4,12 +4,12 @@
 
 ## 支持矩阵
 
-| 工具 | `--tools` 值 | 项目级生成入口 | 发现方式 | 状态 |
-| --- | --- | --- | --- | --- |
-| Claude Code | `claude` | `.claude/commands/<id>.md`(front-matter `description`) | 输入 `/` 后的命令菜单 | generated |
-| Cursor | `cursor` | `.cursor/commands/<id>.md` | Agent 输入框 `/` 菜单 | generated |
-| GitHub Copilot | `copilot` | `.github/prompts/<id>.prompt.md` | Prompt picker;部分客户端支持 slash prompt | generated |
-| Codex | `codex` | **不生成项目级 prompts 文件** | 根 `AGENTS.md` 栅栏块内的命令索引 | via-AGENTS.md |
+| 工具 | `--tools` 值 | 项目级生成入口 | 发现方式 | 结构状态 | 对外认证状态 |
+| --- | --- | --- | --- | --- | --- |
+| Claude Code | `claude` | `.claude/commands/<id>.md`(front-matter `description`) | 输入 `/` 后的命令菜单 | generated | native_not_yet_manually_certified |
+| Cursor | `cursor` | `.cursor/commands/<id>.md` | Agent 输入框 `/` 菜单 | generated | native_not_yet_manually_certified |
+| GitHub Copilot | `copilot` | `.github/prompts/<id>.prompt.md` | Prompt picker;部分客户端支持 slash prompt | generated | native_not_yet_manually_certified |
+| Codex | `codex` | **不生成项目级 prompts 文件** | 根 `AGENTS.md` 栅栏块内的命令索引 | via-AGENTS.md | native_not_yet_manually_certified |
 
 状态语义:
 
@@ -17,6 +17,8 @@
 - `via-AGENTS.md`:不落独立入口文件,依赖工具自身读取根 `AGENTS.md` 的约定。
 
 **`generated` / `via-AGENTS.md` 都不等于「已在每个真实客户端版本人工认证」**——工具的命令发现机制随版本演进,正式启用前按下面的口径人工验收一次并记录版本。
+
+仓库中的 JSON 验收记录与检查脚本处在同一信任域,只能标记为 `self-reported-manual-check`,**不能把上表提升为 certified**。在实现仓库外受信策略、发行者公钥 allowlist、canonical evidence 脱离签名、签名验证及 adapter/source digest 绑定前,所有 adapter 对外状态始终是 `native_not_yet_manually_certified`。
 
 ## 暂不支持的工具
 

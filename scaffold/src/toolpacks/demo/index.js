@@ -6,9 +6,10 @@
  * config) instead of the in-memory dataset.
  */
 import { defineTool } from '../../runtime/tool.js';
+import { applyToolPolicies } from '../../runtime/tool-policy.js';
 import { wrapWriteTool } from '../../guardrails/confirm-gate.js';
-import { withScope } from '../../guardrails/scoped-tool.js';
 import { customers, suppliers, orders, invoices, deliveries, creditNotes, db, daysSince } from './data.js';
+import { DEMO_TOOL_MANIFEST } from './manifest.js';
 
 const MODE_PARAM = {
   type: 'string',
@@ -18,6 +19,16 @@ const MODE_PARAM = {
 
 const usd = (n) => `$${n.toFixed(2)}`;
 const customerById = (id) => customers.find((c) => c.id === id);
+
+function reviewText(value) {
+  return String(value)
+    .replace(/\b(?:bearer\s+)?(?:sk|gh[opusr]|xox[baprs])[-_][a-z0-9_-]{8,}\b/gi, '[redacted credential]')
+    .replace(/\b(?:password|secret|token|api[_-]?key)\s*[:=]\s*\S+/gi, '[redacted credential]')
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+}
 
 function topCustomers(limit) {
   const byCustomer = new Map();
@@ -236,9 +247,6 @@ const createCreditNoteRaw = defineTool({
   },
 });
 
-/** Tools that must be tenant-bound when serving a single customer. */
-const CUSTOMER_BOUND = new Set(['get_customer_profile', 'get_unpaid_invoices', 'create_credit_note']);
-
 /**
  * Build the demo tool list.
  * @param {object} [opts]
@@ -252,7 +260,7 @@ export function buildDemoTools({ confirmations, scope } = {}) {
   const createCreditNote = wrapWriteTool(createCreditNoteRaw, {
     center: confirmations,
     summarize: (args) =>
-      `Create credit note of $${Number(args.amountUsd).toFixed(2)} against invoice ${args.invoiceId} for customer ${args.customerId}. Reason: ${args.reason}`,
+      `Create credit note of $${Number(args.amountUsd).toFixed(2)} against invoice ${reviewText(args.invoiceId)}. Reason: ${reviewText(args.reason)}`,
   });
   const tools = [
     getTopCustomers,
@@ -264,8 +272,5 @@ export function buildDemoTools({ confirmations, scope } = {}) {
     queryRawData,
     createCreditNote,
   ];
-  if (scope?.customerId) {
-    return tools.map((t) => (CUSTOMER_BOUND.has(t.name) ? withScope(t, { customerId: scope.customerId }) : t));
-  }
-  return tools;
+  return applyToolPolicies(tools, DEMO_TOOL_MANIFEST, { scope });
 }
