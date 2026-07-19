@@ -3,6 +3,14 @@
   "version": "0.3.0",
   "description": "把「业务 AI agent 从规划到上线」编译成可执行工作流 + 可运行网关骨架的开源套件",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bluecoast1379/business-agent.git"
+  },
+  "homepage": "https://www.npmjs.com/package/business-agent",
+  "bugs": {
+    "url": "https://github.com/bluecoast1379/business-agent/issues"
+  },
   "keywords": [
     "ai-agent",
     "agent-workflow",

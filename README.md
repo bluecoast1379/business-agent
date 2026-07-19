@@ -1,6 +1,55 @@
 # Business Agent Kit
 
-Business Agent Kit 把「业务 AI agent 从规划到上线」编译成一套可执行的工作流,外加一个可直接运行的网关骨架:10 个阶段命令负责把业务资产盘点、机会评估、路线规划、蓝图设计、工具契约、安全加固、评测与运营固化为可检查的文档产物;零依赖的 scaffold 负责把蓝图落成一个自带鉴权、预算、写操作确认与定时巡检的 Node 网关服务。你不需要先学会某个框架——先回答业务问题,再生成代码。
+![Business Agent Kit：从业务机会到可运行 Agent 网关的工作流与安全骨架](./docs/assets/hero.svg)
+
+[![CI](https://github.com/bluecoast1379/business-agent/actions/workflows/check.yml/badge.svg)](https://github.com/bluecoast1379/business-agent/actions/workflows/check.yml)
+[![npm](https://img.shields.io/npm/v/business-agent.svg)](https://www.npmjs.com/package/business-agent)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-5FA04E.svg)](./package.json)
+[![License](https://img.shields.io/badge/License-Apache--2.0-2DD4BF.svg)](./LICENSE)
+
+**把业务 AI Agent 从发现、设计、实现到安全运营编译成可复验交付。** 10 个阶段命令将业务资产、机会、蓝图、工具契约、安全、评测与运营固化为可检查产物；零依赖 Node.js scaffold 把蓝图落成可运行网关。先回答业务问题，再生成代码。
+
+> **证据边界：** 仓库提供可运行 scaffold，以及 contract、deterministic mock 和 loopback 测试证据；这些证据不等于任何特定客户环境已经通过生产认证。真实部署仍需接入方完成外部身份、存储、HTTPS ingress、provider、渗透与业务验收。
+
+## 三个项目，如何选择
+
+| 项目 | 适合你在解决的问题 | 核心交付 |
+| --- | --- | --- |
+| **Business Agent Kit（本仓库）** | 把业务 AI Agent 从机会规划推进到可运行网关 | 业务工作流 + runtime scaffold + guardrails / evals |
+| [open-workflow-kit](https://github.com/bluecoast1379/open-workflow-kit) | 治理团队在多种 AI Coding 工具中的交付质量 | 完成合同 + 证据账本 + 多工具研发治理 |
+| [openone-workflow-kit](https://github.com/bluecoast1379/openone-workflow-kit) | 独立开发者同时推进产品研发与商业化 | 研发 / 增长双轨工作流 + 多工具适配 |
+
+## 30 秒 Quick Demo
+
+以下以已发布的 `business-agent@0.3.0` 为可复现基线；网络下载时间不计入 30 秒。请在准备好的空目录中执行，Node.js 需为 22 或更高版本：
+
+```bash
+# 1. 确认运行时
+node --version
+# 2. 创建演示工作区
+mkdir business-agent-demo && cd business-agent-demo
+# 3. 生成 Claude Code 入口和共享 workflow core
+npx --yes --package=business-agent@0.3.0 business-agent-init --target . --tools claude --yes
+```
+
+预期结果：目录中出现根 `AGENTS.md`、`business-agent/core/`、`business-agent/scaffold/` 和 10 个 `.claude/commands/*.md` 入口；初始化器不会 push、部署、写数据库或修改生产配置。完整安装验收见 [docs/install.md](./docs/install.md)。
+
+![Business Agent Kit 30 秒 Quick Demo：检查 Node、创建目录、生成工作流入口](./docs/assets/quick-demo.svg)
+
+## 架构一览
+
+![Business Agent Kit 架构：业务发现、蓝图契约、网关生成、安全评测和运营证据依次流转](./docs/assets/architecture.svg)
+
+架构中的关键事实均可在文本中复验：`kit/core/` 是方法论单一事实源，`kit/adapters/` 只做工具发现，`scaffold/` 提供运行时骨架，`examples/` 提供合成数据样例。详细扩展点见 [scaffold guide](./docs/scaffold-guide.md)。
+
+## 发布边界：`main` / Unreleased 与 `v0.3.0`
+
+| 范围 | 已确认内容 | 不应混淆的边界 |
+| --- | --- | --- |
+| `v0.3.0` tag / npm 包 | 四工具适配（Claude Code、Cursor、GitHub Copilot、Codex）、production profile、行业模板与发布检查 | Release 证据只覆盖 tag 快照；不含后来加入的 CodeBuddy / Trae |
+| 当前 `main` / `Unreleased` | 在 `v0.3.0` 上新增 CodeBuddy / Trae instructions adapter，因此当前矩阵为六工具 | 结构与仓库内检查通过不代表各真实客户端版本已人工认证 |
+
+发布内容以不可变 tag、npm Registry 和 [CHANGELOG](./CHANGELOG.md) 共同核对；`main` 的新能力在下一个版本发布前属于 Unreleased。
 
 ## 核心能力
 
@@ -174,7 +223,9 @@ npm run check:release     # packed artifact allowlist、secret scan 与 SBOM
 | Cursor | `.cursor/commands/<id>.md` | generated |
 | GitHub Copilot | `.github/prompts/<id>.prompt.md` | generated |
 | Codex | 无项目级 prompts 文件,经根 `AGENTS.md` 栅栏块 | via-AGENTS.md |
+| CodeBuddy | `.codebuddy/instructions.md` 单文件指引 | instructions |
+| Trae | `.trae/instructions.md` 单文件指引 | instructions |
 
-「generated」表示初始化器生成入口并通过结构检查,不等于已在每个真实客户端版本完成人工认证;人工验收口径见 [docs/support-matrix.md](./docs/support-matrix.md)。
+`generated` 表示初始化器生成逐命令入口，`instructions` 表示生成单文件工具指引，`via-AGENTS.md` 表示依赖根说明文件；三者均通过仓库内结构检查，但都不等于已在每个真实客户端版本完成人工认证。人工验收口径与六工具完整边界见 [docs/support-matrix.md](./docs/support-matrix.md)。
 
 维护约定:通用规则只改 `kit/core/`,adapter 保持薄入口;贡献三原则与 PR 检查清单见 [CONTRIBUTING.md](./CONTRIBUTING.md);漏洞私密报告与发布前脱敏义务见 [SECURITY.md](./SECURITY.md);行为规范见 [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)。当前版本 `0.3.0`，对应 git tag `v0.3.0` 与 npm 包 `business-agent@0.3.0`;见 [CHANGELOG.md](./CHANGELOG.md)。License:Apache-2.0。

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "project": "business-agent",
+  "palette": {
+    "background": ["#070B14", "#0B1220"],
+    "primary": "#2DD4BF",
+    "secondary": "#A3E635",
+    "text": "#F8FAFC",
+    "mutedText": "#A7B0C0"
+  },
+  "assets": [
+    {
+      "path": "hero.svg",
+      "format": "svg",
+      "width": 1440,
+      "height": 720,
+      "purpose": "README hero",
+      "sha256": "53edbb708394a6098f8907db217b95c56ef13d0aef8136a7fad35c86c2c16518"
+    },
+    {
+      "path": "architecture.svg",
+      "format": "svg",
+      "width": 1440,
+      "height": 900,
+      "purpose": "README architecture diagram",
+      "sha256": "db9f6ad32b3067f4e10d2c5f119e31658f6112d2498805d599a2b0fac9cee9c3"
+    },
+    {
+      "path": "quick-demo.svg",
+      "format": "svg",
+      "width": 1440,
+      "height": 720,
+      "purpose": "README 30-second quick demo",
+      "sha256": "62807fd23cab9981d6c27bdccc60f5731f779a2b6d94062e4c21ade34ca14ac2"
+    },
+    {
+      "path": "social-preview.svg",
+      "format": "svg",
+      "width": 1280,
+      "height": 640,
+      "purpose": "Source for GitHub social preview PNG",
+      "sha256": "728e562af4eaef389c590843de7958e7909bb99961e4f26c898d8f2d6ec31179"
+    }
+  ],
+  "exports": [
+    {
+      "filename": "social-preview.png",
+      "format": "png",
+      "width": 1280,
+      "height": 640,
+      "source": "social-preview.svg",
+      "purpose": "GitHub repository social preview upload",
+      "tracked": false,
+      "sha256": "c84d860f8e6e38faac2c08625076e03cf1daef6d36fe68f151a8b60c90756ea9"
+    }
+  ]
+}
