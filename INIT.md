@@ -51,7 +51,7 @@ business-agent-init --target . --tools claude,cursor --upgrade
 | 参数 | 说明 |
 | --- | --- |
 | `--target <dir>` | 必填,目标工作区根目录 |
-| `--tools <csv>` | `claude,cursor,copilot,codex`,默认 `claude`;不支持的工具直接报错并指向 [docs/support-matrix.md](./docs/support-matrix.md) |
+| `--tools <csv>` | `claude,cursor,copilot,codex,codebuddy,trae`,默认 `claude`(别名 `trea` 自动归一为 `trae`);不支持的工具直接报错并指向 [docs/support-matrix.md](./docs/support-matrix.md) |
 | `--yes` | 非交互模式 |
 | `--dry-run` | 只输出计划,不写盘 |
 | `--upgrade` | 升级模式,按指纹刷新 kit 生成物 |
@@ -70,6 +70,8 @@ business-agent-init --target . --tools claude,cursor --upgrade
 | `.claude/commands/<id>.md` | claude adapter,10 个命令入口 | 按指纹刷新 |
 | `.cursor/commands/<id>.md` | cursor adapter | 按指纹刷新 |
 | `.github/prompts/<id>.prompt.md` | copilot adapter | 按指纹刷新 |
+| `.codebuddy/instructions.md` | codebuddy adapter,单文件工具指引 | 按指纹刷新 |
+| `.trae/instructions.md` | trae adapter,单文件工具指引 | 按指纹刷新 |
 | (codex) | 不生成项目级 prompts 文件,靠根 `AGENTS.md` 栅栏块 | 随栅栏块更新 |
 
 每个 adapter 都是薄入口:执行时按序读取根 `AGENTS.md` 栅栏块 → `business-agent/business-profile.yaml` → `business-agent/core/command-manifest.yaml` → `business-agent/core/commands/<id>.md`,并遵循其中的 Execution Rules。
@@ -102,7 +104,7 @@ business-agent-init --target . --tools claude,cursor --upgrade
 - [ ] 初始化后 `business-agent/core/`、`business-agent/scaffold/`、`business-agent/business-profile.yaml`、`business-agent/local/` 齐备;
 - [ ] target `.gitignore` 含 `business-agent/local/` 与 `.env`;
 - [ ] 根 `AGENTS.md` 有 business-agent 栅栏块,且原有内容(如有)未被改动;
-- [ ] 所选工具的全部 10 个命令入口已生成(claude/cursor/copilot),或 codex 场景下 AGENTS.md 栅栏块内含命令索引;
+- [ ] 所选工具的全部 10 个命令入口已生成(claude/cursor/copilot),codebuddy/trae 场景下 `.{tool}/instructions.md` 指引已生成,codex 场景下 AGENTS.md 栅栏块内含命令索引;
 - [ ] 在真实 AI 工具中运行 `/agent-status`,能输出规划状态汇报;
 - [ ] `business-agent/scaffold/` 内 `LLM_PROVIDER=mock GATEWAY_AUTH_TOKEN=development-token npm run smoke` 通过;
 - [ ] 初始化过程无任何远程 Git、部署、数据库或生产配置动作;

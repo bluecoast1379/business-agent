@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- **CodeBuddy 与 Trae adapter**:新增 `instructions` 结构状态——初始化器为 `--tools codebuddy,trae` 生成单文件工具指引(`.codebuddy/instructions.md` / `.trae/instructions.md`,带指纹、含全部命令索引,执行时按序读取 core 契约);`trea` 别名自动归一为 `trae`。支持矩阵、INIT 清单、adapter conformance 校验(`instructions` 状态需 output_dir 与不含 `{id}` 的单文件 pattern)与 smoke 测试同步更新;对外认证状态仍为 `native_not_yet_manually_certified`,人工验收口径见 docs/support-matrix.md。
+
 ## [0.3.0] - 2026-07-16
 
 ### Added

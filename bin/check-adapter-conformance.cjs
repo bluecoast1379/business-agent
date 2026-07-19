@@ -6,7 +6,7 @@ const path = require('path');
 const { parseYaml } = require('./check-command-manifest.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-const ALLOWED_DESCRIPTOR_STATUS = new Set(['generated', 'via-AGENTS.md']);
+const ALLOWED_DESCRIPTOR_STATUS = new Set(['generated', 'instructions', 'via-AGENTS.md']);
 const PUBLIC_CERTIFICATION_STATUS = 'native_not_yet_manually_certified';
 const SELF_REPORTED_STATUS = 'self-reported-manual-check';
 const MAX_SELF_REPORT_VALIDITY_MS = 90 * 24 * 60 * 60 * 1_000;
@@ -20,8 +20,9 @@ function validateAdapter(adapter, source = '<adapter>') {
     if (typeof adapter[key] !== 'string') errors.push(`${source}: ${key} must be a string`);
   }
   if (typeof adapter.frontmatter !== 'boolean') errors.push(`${source}: frontmatter must be boolean`);
-  if (!ALLOWED_DESCRIPTOR_STATUS.has(adapter.status)) errors.push(`${source}: status must be generated or via-AGENTS.md; structural files cannot claim certification`);
+  if (!ALLOWED_DESCRIPTOR_STATUS.has(adapter.status)) errors.push(`${source}: status must be generated, instructions or via-AGENTS.md; structural files cannot claim certification`);
   if (adapter.status === 'generated' && (!adapter.output_dir || !adapter.file_pattern.includes('{id}'))) errors.push(`${source}: generated adapters need output_dir and {id} file_pattern`);
+  if (adapter.status === 'instructions' && (!adapter.output_dir || !adapter.file_pattern || adapter.file_pattern.includes('{id}'))) errors.push(`${source}: instructions adapters need output_dir and a single-file pattern without {id}`);
   if (adapter.status === 'via-AGENTS.md' && (adapter.output_dir || adapter.file_pattern)) errors.push(`${source}: via-AGENTS.md must not generate an entry path`);
   return errors;
 }

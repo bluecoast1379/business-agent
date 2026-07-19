@@ -31,10 +31,24 @@ function selfReport(patch = {}) {
 
 test('all shipped adapters pass structural conformance without trusted certification', () => {
   const result = run();
-  assert.deepStrictEqual(result.tools.sort(), ['claude', 'codex', 'copilot', 'cursor']);
+  assert.deepStrictEqual(result.tools.sort(), ['claude', 'codebuddy', 'codex', 'copilot', 'cursor', 'trae']);
   assert.equal(result.selfReportedRecords, 0);
   assert.equal(result.trustedCertifications, 0);
   assert.equal(result.publicCertificationStatus, 'native_not_yet_manually_certified');
+});
+
+test('instructions adapters need output_dir and a single-file pattern', () => {
+  const base = {
+    tool: 'trae', display_name: 'Trae', status: 'instructions', output_dir: '.trae',
+    file_pattern: 'instructions.md', frontmatter: false, discovery: 'x', notes: 'x',
+  };
+  assert.deepStrictEqual(validateAdapter(base), []);
+  assert(validateAdapter({ ...base, output_dir: '' })
+    .some((error) => error.includes('single-file pattern')));
+  assert(validateAdapter({ ...base, file_pattern: '{id}.md' })
+    .some((error) => error.includes('single-file pattern')));
+  assert(validateAdapter({ ...base, file_pattern: '' })
+    .some((error) => error.includes('single-file pattern')));
 });
 
 test('descriptor cannot self-assert certification', () => {
