@@ -8,7 +8,7 @@ Business Agent Kit 把「业务 AI agent 从规划到上线」编译成一套可
 | --- | --- |
 | 10 个阶段命令 | 从 `discover-business` 到 `operate-agent`,`kit/core/command-manifest.yaml` 是跨工具入口的单一事实源;`scaffold-gateway` 是进入写代码阶段的唯一实现闸门 |
 | 零依赖 production scaffold | Node 22+ ESM,只用 Node 内置模块与全局 `fetch`;自带 Anthropic / OpenAI-compatible / Mock provider、principal RBAC、持久化状态、可靠执行、durable scheduler、隐私默认关闭的 telemetry、只读 dashboard 与确定性 eval |
-| 四工具 adapter | Claude Code / Cursor / GitHub Copilot 生成项目级命令入口,Codex 经根 `AGENTS.md` 栅栏块接入;adapter 只做薄转发,方法论只存在于 `kit/core/` |
+| 六工具 adapter | Claude Code / Cursor / GitHub Copilot 生成项目级命令入口,CodeBuddy / Trae 生成单文件工具指引,Codex 经根 `AGENTS.md` 栅栏块接入;adapter 只做薄转发,方法论只存在于 `kit/core/` |
 | 脱敏检查 | `npm run check:sanitized` 扫描全仓词面与通用密钥形态,支持 `--extra-banned` 挂接仓库外私有 denylist |
 | 网关十大事故清单 | 把业务 agent 网关的常见事故(兜底密钥、无鉴权端点、成本追踪未接线、写操作无确认……)沉淀为 `kit/core/checklists/gateway-incidents.md`,`harden-agent` 阶段强制逐项对照 |
 
@@ -48,7 +48,7 @@ node ../business-agent/bin/init-workspace.cjs --target . --dry-run
 node ../business-agent/bin/init-workspace.cjs --target . --upgrade
 ```
 
-`--tools` 支持 `claude,cursor,copilot,codex`(默认 `claude`);传入 `trae`、`kiro`、`codebuddy` 之类暂不支持的工具会直接报错并指向 [支持矩阵](./docs/support-matrix.md)。生成物清单、升级保护规则与接收方验收清单见 [INIT.md](./INIT.md);tarball / Git / registry 三种安装通道见 [docs/install.md](./docs/install.md)。
+`--tools` 支持 `claude,cursor,copilot,codex,codebuddy,trae`(默认 `claude`;别名 `trea` 自动归一为 `trae`);传入 `kiro` 等暂不支持的工具会直接报错并指向 [支持矩阵](./docs/support-matrix.md)。生成物清单、升级保护规则与接收方验收清单见 [INIT.md](./INIT.md);tarball / Git / registry 三种安装通道见 [docs/install.md](./docs/install.md)。
 
 ## 工作流总览
 

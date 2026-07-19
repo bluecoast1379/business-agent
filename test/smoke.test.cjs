@@ -61,7 +61,9 @@ function checkPrerequisites() {
     'kit/adapters/claude.yaml',
     'kit/adapters/cursor.yaml',
     'kit/adapters/copilot.yaml',
-    'kit/adapters/codex.yaml'
+    'kit/adapters/codex.yaml',
+    'kit/adapters/codebuddy.yaml',
+    'kit/adapters/trae.yaml'
   ];
   const missing = required.filter((rel) => !fs.existsSync(path.join(KIT_ROOT, rel)));
   if (missing.length > 0) {
@@ -89,10 +91,10 @@ function main() {
   const tempDirs = [];
   try {
     // ------------------------------------------------------------------
-    console.log('场景 1: 全新初始化(claude,cursor,copilot)');
+    console.log('场景 1: 全新初始化(claude,cursor,copilot,codebuddy,trae)');
     const t1 = mkTemp('t1');
     tempDirs.push(t1);
-    const initResult = runInit(['--target', t1, '--tools', 'claude,cursor,copilot', '--yes']);
+    const initResult = runInit(['--target', t1, '--tools', 'claude,cursor,copilot,codebuddy,trae', '--yes']);
     assert(initResult.status === 0, `init 退出码应为 0,实际 ${initResult.status}\n${initResult.stdout}\n${initResult.stderr}`);
     if (initResult.status !== 0) throw new Error('初始化失败,后续断言跳过');
 
@@ -158,6 +160,22 @@ function main() {
     const claudeDoc = read(path.join(t1, '.claude', 'commands', `${commandIds[0]}.md`));
     assert(claudeDoc.startsWith('---') && claudeDoc.includes('description:'), 'claude 命令文件带 front-matter description');
 
+    for (const [tool, dir] of [['codebuddy', '.codebuddy'], ['trae', '.trae']]) {
+      const insPath = path.join(t1, dir, 'instructions.md');
+      if (!fs.existsSync(insPath)) {
+        assert(false, `${dir}/instructions.md 应存在(${tool} instructions adapter)`);
+        continue;
+      }
+      const ins = read(insPath);
+      assert(ins.includes(FINGERPRINT), `${dir}/instructions.md 带指纹`);
+      assert(ins.includes('按序读取'), `${dir}/instructions.md 含「按序读取」`);
+      assert(ins.includes('business-agent/core/command-manifest.yaml'), `${dir}/instructions.md 指向 core manifest`);
+      for (const id of commandIds) {
+        assert(ins.includes(`/${id}`), `${dir}/instructions.md 命令索引含 /${id}`);
+      }
+      assert(!fs.existsSync(path.join(t1, dir, 'commands')), `${dir} 不生成逐命令入口目录`);
+    }
+
     // ------------------------------------------------------------------
     console.log('场景 2: --upgrade(profile 保护 + core 刷新 + 无指纹文件保护)');
     fs.appendFileSync(profilePath, '\ncustom_note: keep-me-after-upgrade\n');
@@ -174,7 +192,7 @@ function main() {
       .filter((line) => line.trim() !== '/local/')
       .join('\n'));
 
-    const upgradeResult = runInit(['--target', t1, '--tools', 'claude,cursor,copilot', '--yes', '--upgrade']);
+    const upgradeResult = runInit(['--target', t1, '--tools', 'claude,cursor,copilot,codebuddy,trae', '--yes', '--upgrade']);
     assert(upgradeResult.status === 0, `upgrade 退出码应为 0,实际 ${upgradeResult.status}\n${upgradeResult.stdout}\n${upgradeResult.stderr}`);
 
     const profileAfter = read(profilePath);
@@ -223,6 +241,10 @@ function main() {
     const unsupported = runInit(['--target', t3, '--tools', 'kiro', '--yes']);
     assert(unsupported.status !== 0, '不支持的工具应非零退出');
     assert((unsupported.stderr || '').includes('暂不支持'), '不支持的工具报错指向 support-matrix');
+
+    const aliasDryRun = runInit(['--target', t3, '--tools', 'trea', '--dry-run']);
+    assert(aliasDryRun.status === 0, `别名 trea 应归一为 trae 并通过,实际 ${aliasDryRun.status}\n${aliasDryRun.stderr}`);
+    assert((aliasDryRun.stdout || '').includes('trae'), '别名 trea 的执行摘要按 trae 展示');
   } catch (err) {
     failed++;
     failures.push(String(err.message || err));

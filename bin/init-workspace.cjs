@@ -21,7 +21,8 @@ const FINGERPRINT = 'generated-by: business-agent';
 const FENCE_BEGIN = '<!-- BEGIN business-agent -->';
 const FENCE_END = '<!-- END business-agent -->';
 const NEW_SUFFIX = '.business-agent-new';
-const SUPPORTED_TOOLS = ['claude', 'cursor', 'copilot', 'codex'];
+const SUPPORTED_TOOLS = ['claude', 'cursor', 'copilot', 'codex', 'codebuddy', 'trae'];
+const TOOL_ALIASES = { trea: 'trae' };
 const GITIGNORE_ENTRIES = [
   'business-agent/local/',
   'business-agent/scaffold/local/',
@@ -38,7 +39,7 @@ function usage() {
     '',
     '选项:',
     '  --target <dir>   目标工作区根目录(必填)。',
-    '  --tools <csv>    接入的 AI 工具,逗号分隔;支持 claude,cursor,copilot,codex;默认 claude。',
+    '  --tools <csv>    接入的 AI 工具,逗号分隔;支持 claude,cursor,copilot,codex,codebuddy,trae(别名 trea);默认 claude。',
     '  --yes, -y        非交互模式,跳过确认。',
     '  --dry-run        只展示计划动作,不写磁盘。',
     '  --upgrade        升级模式:刷新 core/scaffold 与带指纹的生成文件;',
@@ -53,7 +54,7 @@ function parseArgs(argv) {
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--target') options.target = argv[++i] || '';
-    else if (arg === '--tools') options.tools = String(argv[++i] || '').split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+    else if (arg === '--tools') options.tools = String(argv[++i] || '').split(',').map((t) => t.trim().toLowerCase()).map((t) => TOOL_ALIASES[t] || t).filter(Boolean);
     else if (arg === '--yes' || arg === '-y') options.yes = true;
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--upgrade') options.upgrade = true;
@@ -257,6 +258,27 @@ function buildCommandDoc(command, adapter) {
   return lines.join('\n') + '\n';
 }
 
+function buildInstructionsDoc(adapter, commands) {
+  const names = commands.map((c) => `/${c.id}`).join(' ');
+  return [
+    `<!-- ${FINGERPRINT} -->`,
+    '',
+    `# ${adapter.displayName} 使用 business-agent 工作流`,
+    '',
+    '本文件是薄入口,不复制方法论。执行任何 business-agent 命令时按序读取:',
+    '',
+    '1. 根 `AGENTS.md` 的 business-agent 栅栏块(总入口、命令总览与使用约定)',
+    '2. `business-agent/business-profile.yaml`(业务画像)',
+    '3. `business-agent/core/command-manifest.yaml`(命令清单与产物契约)',
+    '4. `business-agent/core/commands/<id>.md`(对应命令的阶段契约)',
+    '',
+    `可用命令:${names}`,
+    '',
+    '在对话中说「执行 /<id>」即可;产物写入 manifest 登记的 outputs 路径。本文件不得覆盖 core 的执行规则与闸门。',
+    ''
+  ].join('\n');
+}
+
 function buildLocalReadme() {
   return [
     `<!-- ${FINGERPRINT} -->`,
@@ -303,6 +325,7 @@ function loadAdapter(tool) {
   if (!doc || typeof doc !== 'object') fatal(`adapter 描述损坏: ${adapterPath}`);
   return {
     tool,
+    displayName: doc.display_name ? String(doc.display_name) : tool,
     status: String(doc.status || ''),
     outputDir: doc.output_dir ? String(doc.output_dir) : '',
     filePattern: doc.file_pattern ? String(doc.file_pattern) : '{id}.md',
@@ -365,6 +388,13 @@ function generateAdapterFiles(ws, tools, commands) {
     const adapter = loadAdapter(tool);
     if (!adapter.outputDir) {
       ws.notes.push(`${tool}: 不生成项目级命令文件(${adapter.status}),通过根 AGENTS.md 栅栏块接入。`);
+      continue;
+    }
+    if (adapter.status === 'instructions') {
+      const fileName = adapter.filePattern || 'instructions.md';
+      const absPath = path.join(ws.target, adapter.outputDir, fileName);
+      ws.writeManaged(absPath, buildInstructionsDoc(adapter, commands));
+      ws.notes.push(`${tool}: 工具指引生成于 ${adapter.outputDir}/${fileName}(单文件薄入口,命令经根 AGENTS.md 栅栏块索引)。`);
       continue;
     }
     for (const command of commands) {

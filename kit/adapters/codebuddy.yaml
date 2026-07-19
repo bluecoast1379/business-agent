@@ -1,0 +1,10 @@
+# business-agent 工具 adapter 描述:CodeBuddy
+# init-workspace.cjs 读取本文件决定命令入口的生成路径与格式。
+tool: codebuddy
+display_name: "CodeBuddy"
+status: instructions
+output_dir: ".codebuddy"
+file_pattern: "instructions.md"
+frontmatter: false
+discovery: "项目根 .codebuddy/instructions.md 自动生效;命令按根 AGENTS.md 栅栏块内的命令索引响应"
+notes: "单文件薄指引,不逐命令生成入口;用户在对话中说「执行 /<id>」,执行时按序读取 core 契约。"
